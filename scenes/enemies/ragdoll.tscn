@@ -1,0 +1,171 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/deaths/ragdoll.gd" id="1_ragdoll"]
+
+[sub_resource type="PhysicsMaterial" id="PhysMat"]
+friction = 0.8
+bounce = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_shirt"]
+albedo_color = Color(0.2, 0.4, 0.8, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_skin"]
+albedo_color = Color(0.92, 0.72, 0.55, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_pants"]
+albedo_color = Color(0.18, 0.2, 0.28, 1)
+roughness = 0.9
+
+[sub_resource type="CapsuleShape3D" id="Shape_torso"]
+radius = 0.3
+height = 0.8
+
+[sub_resource type="CapsuleMesh" id="Mesh_torso"]
+material = SubResource("Mat_shirt")
+radius = 0.3
+height = 0.8
+
+[sub_resource type="SphereShape3D" id="Shape_head"]
+radius = 0.22
+
+[sub_resource type="SphereMesh" id="Mesh_head"]
+material = SubResource("Mat_skin")
+radius = 0.22
+height = 0.44
+
+[sub_resource type="CapsuleShape3D" id="Shape_arm"]
+radius = 0.1
+height = 0.66
+
+[sub_resource type="CapsuleMesh" id="Mesh_arm"]
+material = SubResource("Mat_shirt")
+radius = 0.1
+height = 0.66
+
+[sub_resource type="CapsuleShape3D" id="Shape_leg"]
+radius = 0.12
+height = 0.68
+
+[sub_resource type="CapsuleMesh" id="Mesh_leg"]
+material = SubResource("Mat_pants")
+radius = 0.12
+height = 0.68
+
+[node name="Ragdoll" type="Node3D"]
+script = ExtResource("1_ragdoll")
+
+[node name="Torso" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 30.0
+physics_material_override = SubResource("PhysMat")
+continuous_cd = true
+
+[node name="Shape" type="CollisionShape3D" parent="Torso"]
+shape = SubResource("Shape_torso")
+
+[node name="Mesh" type="MeshInstance3D" parent="Torso"]
+mesh = SubResource("Mesh_torso")
+
+[node name="Head" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 5.0
+physics_material_override = SubResource("PhysMat")
+
+[node name="Shape" type="CollisionShape3D" parent="Head"]
+shape = SubResource("Shape_head")
+
+[node name="Mesh" type="MeshInstance3D" parent="Head"]
+mesh = SubResource("Mesh_head")
+
+[node name="ArmL" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 1.07, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 4.0
+physics_material_override = SubResource("PhysMat")
+
+[node name="Shape" type="CollisionShape3D" parent="ArmL"]
+shape = SubResource("Shape_arm")
+
+[node name="Mesh" type="MeshInstance3D" parent="ArmL"]
+mesh = SubResource("Mesh_arm")
+
+[node name="ArmR" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 1.07, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 4.0
+physics_material_override = SubResource("PhysMat")
+
+[node name="Shape" type="CollisionShape3D" parent="ArmR"]
+shape = SubResource("Shape_arm")
+
+[node name="Mesh" type="MeshInstance3D" parent="ArmR"]
+mesh = SubResource("Mesh_arm")
+
+[node name="LegL" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.34, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 8.0
+physics_material_override = SubResource("PhysMat")
+
+[node name="Shape" type="CollisionShape3D" parent="LegL"]
+shape = SubResource("Shape_leg")
+
+[node name="Mesh" type="MeshInstance3D" parent="LegL"]
+mesh = SubResource("Mesh_leg")
+
+[node name="LegR" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.34, 0)
+collision_layer = 8
+collision_mask = 1
+mass = 8.0
+physics_material_override = SubResource("PhysMat")
+
+[node name="Shape" type="CollisionShape3D" parent="LegR"]
+shape = SubResource("Shape_leg")
+
+[node name="Mesh" type="MeshInstance3D" parent="LegR"]
+mesh = SubResource("Mesh_leg")
+
+[node name="Neck" type="ConeTwistJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.42, 0)
+node_a = NodePath("../Torso")
+node_b = NodePath("../Head")
+swing_span = 0.6
+twist_span = 0.8
+
+[node name="ShoulderL" type="ConeTwistJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 1.4, 0)
+node_a = NodePath("../Torso")
+node_b = NodePath("../ArmL")
+swing_span = 1.6
+twist_span = 1.0
+
+[node name="ShoulderR" type="ConeTwistJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 1.4, 0)
+node_a = NodePath("../Torso")
+node_b = NodePath("../ArmR")
+swing_span = 1.6
+twist_span = 1.0
+
+[node name="HipL" type="ConeTwistJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.68, 0)
+node_a = NodePath("../Torso")
+node_b = NodePath("../LegL")
+swing_span = 1.2
+twist_span = 0.6
+
+[node name="HipR" type="ConeTwistJoint3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.68, 0)
+node_a = NodePath("../Torso")
+node_b = NodePath("../LegR")
+swing_span = 1.2
+twist_span = 0.6

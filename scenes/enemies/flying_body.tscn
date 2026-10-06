@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/flying_body.gd" id="1_body"]
+
+[sub_resource type="PhysicsMaterial" id="PhysMat_body"]
+friction = 0.8
+bounce = 0.3
+
+[sub_resource type="CapsuleShape3D" id="Shape_body"]
+radius = 0.4
+height = 1.8
+
+[node name="FlyingBody" type="RigidBody3D"]
+collision_layer = 8
+collision_mask = 1
+mass = 70.0
+physics_material_override = SubResource("PhysMat_body")
+continuous_cd = true
+script = ExtResource("1_body")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_body")
