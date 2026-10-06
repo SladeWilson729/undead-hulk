@@ -265,6 +265,17 @@ I ran an automated headless test against Godot 4.7.2, and all 16 checks passed: 
 
 Steps 4 to 13 still pass. Step 3's "8+ attackers surround the Hulk" check is still flaky: it reads 6-8 at the 9 s mark, with or without the props. The same happens without this change; it's on the list to look at with the swarm tuning.
 
+**Step 10b (impact sounds), 2026-10-06.** Will added 13 ElevenLabs effects. None has lead-in silence, but their loudness ranged from -8.9 to -30.5 dB RMS. `scripts/audio/sfx.gd` (the Sfx node in main.tscn) plays them from a 24-voice pool of 3D players on the SFX bus, so they pan with where they happen. Each group levels its files to one target loudness using the measured RMS, and has voice and stagger limits:
+- **punch_hit:** squishy and thudding punch, on a connecting punch only (no sound on a whiff). Up to 3 at once.
+- **pound_hit:** cannonball, on every pound landing.
+- **pillar_smash:** brick wall, from `BreakablePillar.smashed`.
+- **car_impact:** heavy metal box, from the new `ThrowableCar.impacted` (any solid hit at 4 m/s or more, at most every 0.2 s). Volume scales with speed.
+- **splat:** orange, melon and watermelon, on DeathDirector explosions and splats. Up to 4 at once, 40 ms apart.
+- **yelp:** man and woman yelps, on the new `WaveSpawner.human_killed`. 40% chance, up to 2 at once, 120 ms apart. A 20-kill pound gives one or two yelps, not a choir.
+- Main does all the wiring. The file names (with "#") are kept as generated, because I can't rename files on Will's machine.
+
+I ran an automated headless test against Godot 4.7.2, and all 13 checks passed: all clips load, the pool and levelling work, a whiff is silent, and the punch, pound, pillar, car, explosion and yelp sounds each fire at the right moment within their limits. Steps 4 to 14 still pass.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -278,6 +289,8 @@ Steps 4 to 13 still pass. Step 3's "8+ attackers surround the Hulk" check is sti
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
 - **Hulk/Voice (HulkVoice):** the line lists per event, punch_chance, pitch_variance; bus volumes in the Audio tab
 - **Main > Audio:** music_death_duck_db
+- **Sfx (main.tscn):** voices, unit_size, panning; per-group target / max_voices / min_interval / chance / pitch in the `groups` table in `scripts/audio/sfx.gd`
+- **ThrowableCar > Sound:** impact_sound_speed
 - **ThrowableCar (Level/Car):** throw_speed, throw_lift, throw_spin, pin_speed, kill_speed, max_pinned, crush_speed, crush_drop, respawn_height; CrushZone shape size
 - **Hulk/CarryThrow:** pickup_range, grab_snap_time, lift_move, carry_speed, grip_offset, throw_move, throw_lockout
 - **Hulk/Animator > Carry clips:** lift_start_time, lift_speed, throw_start_time, throw_release_time, throw_end_time, throw_speed

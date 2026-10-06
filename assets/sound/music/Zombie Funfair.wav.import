@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://begr70ia5t1ay"
+path="res://.godot/imported/Zombie Funfair.wav-08621f4dbcaf66316f27caccad1036ed.sample"
 
 [deps]
 
 source_file="res://assets/sound/music/Zombie Funfair.wav"
+dest_files=["res://.godot/imported/Zombie Funfair.wav-08621f4dbcaf66316f27caccad1036ed.sample"]
 
 [params]
 

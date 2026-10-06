@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://dhn27q8g6oxpo"
+path="res://.godot/imported/punch-5.mp3-24679e2e15a18f295e21d96f843d1fee.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/punch-5.mp3"
+dest_files=["res://.godot/imported/punch-5.mp3-24679e2e15a18f295e21d96f843d1fee.mp3str"]
 
 [params]
 

@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://yudw1sxumajx"
+path="res://.godot/imported/lift-car-3.mp3-93cad30be61afc08a7931dbdf12ef0e2.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/lift-car-3.mp3"
+dest_files=["res://.godot/imported/lift-car-3.mp3-93cad30be61afc08a7931dbdf12ef0e2.mp3str"]
 
 [params]
 

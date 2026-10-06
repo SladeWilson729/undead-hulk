@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://dr1i2x3njoxdv"
+path="res://.godot/imported/ground-pound-1.mp3-ace0514155eb8c83590a80bef0d2f847.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/ground-pound-1.mp3"
+dest_files=["res://.godot/imported/ground-pound-1.mp3-ace0514155eb8c83590a80bef0d2f847.mp3str"]
 
 [params]
 

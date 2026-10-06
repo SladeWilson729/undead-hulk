@@ -34,6 +34,7 @@ extends Node3D
 @onready var deaths: DeathDirector = $Deaths
 @onready var spawner: WaveSpawner = $Spawner
 @onready var music: AudioStreamPlayer = $Music
+@onready var sfx: Sfx = $Sfx
 
 var _hit_stop_token: int = 0
 
@@ -54,6 +55,13 @@ func _ready() -> void:
 	for car in get_tree().get_nodes_in_group("throwables"):
 		car.thrown.connect(func() -> void: camera_rig.add_shake(0.2))
 		car.crushed.connect(_on_car_crushed)
+		# Clang scales with speed: a 22 m/s slam is ~4 dB louder than a 10 m/s bump.
+		car.impacted.connect(func(pos: Vector3, speed: float) -> void:
+			sfx.play("car_impact", pos, clampf((speed - 14.0) * 0.5, -6.0, 4.0)))
+	# Gore and screams.
+	deaths.exploded.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
+	deaths.splatted.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
+	spawner.human_killed.connect(func(pos: Vector3) -> void: sfx.play("yelp", pos + Vector3.UP * 1.5))
 	# Victory roar after each cleared wave; the next wave cuts it if it's still going.
 	spawner.wave_cleared.connect(func(_wave: int) -> void: hulk.animator.queue_victory())
 	spawner.wave_started.connect(func(_wave: int, _size: int) -> void: hulk.animator.cancel_victory())
@@ -67,11 +75,13 @@ func _exit_tree() -> void:
 func _on_punched(hits: int) -> void:
 	if hits == 0:
 		return
+	sfx.play("punch_hit", hulk.global_position - hulk.global_basis.z * 2.0 + Vector3.UP * 1.5)
 	camera_rig.add_shake(punch_shake + punch_shake_per_hit * (hits - 1))
 	hit_stop(hit_stop_duration)
 
 
-func _on_smashed(_position: Vector3) -> void:
+func _on_smashed(at: Vector3) -> void:
+	sfx.play("pillar_smash", at)
 	camera_rig.add_shake(smash_shake)
 	hit_stop(smash_hit_stop)
 
@@ -83,6 +93,7 @@ func _on_car_crushed(_position: Vector3, count: int) -> void:
 
 
 func _on_pounded(kills: int) -> void:
+	sfx.play("pound_hit", hulk.global_position)
 	camera_rig.add_shake(pound_shake if kills > 0 else pound_shake * 0.5)
 	if kills > 0:
 		hit_stop(pound_hit_stop)

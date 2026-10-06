@@ -19,6 +19,8 @@ signal picked_up
 signal thrown
 ## Hard horizontal impact. count = soldiers that were pinned and got crushed.
 signal crushed(position: Vector3, count: int)
+## Flying car hit something solid (floor, wall, another car) at `speed` m/s. For the clang.
+signal impacted(position: Vector3, speed: float)
 
 enum State { IDLE, HELD, FLYING }
 
@@ -51,7 +53,12 @@ const COMIC := preload("res://scripts/vfx/comic_wall_impact.gd")
 ## Below this height (fell off the bridge) the car returns to where it started.
 @export var respawn_height: float = -20.0
 
+@export_group("Sound")
+## Impacts slower than this (m/s) make no clang.
+@export var impact_sound_speed: float = 4.0
+
 var state: State = State.IDLE
+var _last_impact_ms: int = -10000
 
 var _home: Transform3D
 var _prev_velocity: Vector3 = Vector3.ZERO
@@ -211,7 +218,16 @@ func _on_body_entered(body: Node) -> void:
 	if state != State.FLYING:
 		return
 	var pillar := body as BreakablePillar
-	if pillar == null or pillar.broken or _prev_velocity.length() < kill_speed:
+	if pillar == null or pillar.broken:
+		# Anything else solid: clang. Rate-limited so a car bouncing and scraping along the
+		# floor doesn't fire a sound every physics frame.
+		var speed := _prev_velocity.length()
+		var now := Time.get_ticks_msec()
+		if speed >= impact_sound_speed and now - _last_impact_ms > 200:
+			_last_impact_ms = now
+			impacted.emit(global_position + Vector3.UP * 0.8, speed)
+		return
+	if _prev_velocity.length() < kill_speed:
 		return
 	var hit_height := clampf(global_position.y - pillar.global_position.y + 0.8, 0.3, pillar.size.y)
 	pillar.take_hit(_prev_velocity, hit_height, 1.2)

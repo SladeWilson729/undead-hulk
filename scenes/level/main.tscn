@@ -12,7 +12,8 @@
 [ext_resource type="Script" uid="uid://dq87aj7mtfefm" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
 [ext_resource type="Script" uid="uid://cbm5lejb367by" path="res://scripts/level/breakable_pillar.gd" id="9_pillar"]
 [ext_resource type="PackedScene" path="res://scenes/props/throwable_car.tscn" id="10_car"]
-[ext_resource type="AudioStream" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
+[ext_resource type="AudioStream" uid="uid://begr70ia5t1ay" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
+[ext_resource type="Script" path="res://scripts/audio/sfx.gd" id="12_sfx"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -143,7 +144,7 @@ script = ExtResource("9_pillar")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 1.5)
 script = ExtResource("9_pillar")
 
-[node name="Car" parent="Level" instance=ExtResource("10_car")]
+[node name="Car" parent="Level" unique_id=1830679348 instance=ExtResource("10_car")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.5, 0, 2.2)
 
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
@@ -170,7 +171,10 @@ fov = 50.0
 
 [node name="HUD" parent="." unique_id=443355167 instance=ExtResource("4_hud")]
 
-[node name="Music" type="AudioStreamPlayer" parent="."]
+[node name="Music" type="AudioStreamPlayer" parent="." unique_id=976956181]
 stream = ExtResource("11_music")
 autoplay = true
 bus = &"Music"
+
+[node name="Sfx" type="Node3D" parent="."]
+script = ExtResource("12_sfx")

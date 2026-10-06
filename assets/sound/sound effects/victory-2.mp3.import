@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://c1y3x1e8ell7l"
+path="res://.godot/imported/victory-2.mp3-8a1a3b2e4eeb538217273833aec95428.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/victory-2.mp3"
+dest_files=["res://.godot/imported/victory-2.mp3-8a1a3b2e4eeb538217273833aec95428.mp3str"]
 
 [params]
 

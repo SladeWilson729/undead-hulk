@@ -11,6 +11,8 @@ extends Node
 signal wave_started(wave: int, size: int)
 signal wave_cleared(wave: int)
 signal kills_changed(total: int)
+## One soldier died, and where. For effects that care about position (death yelps).
+signal human_killed(position: Vector3)
 
 enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 
@@ -133,10 +135,11 @@ func _begin_break(seconds: float) -> void:
 	break_remaining = seconds
 
 
-func _on_human_died(_human: Human) -> void:
+func _on_human_died(human: Human) -> void:
 	alive -= 1
 	kills += 1
 	kills_changed.emit(kills)
+	human_killed.emit(human.global_position)
 	_check_cleared()
 
 
