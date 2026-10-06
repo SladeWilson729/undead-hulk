@@ -1,0 +1,14 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3060
+ERROR: Can't create shader cache folder, no shader caching will happen: user://
+   at: RendererCompositorRD (servers/rendering/renderer_rd/renderer_compositor_rd.cpp:337)
+
+REVIEW wave=0 time=0.0 hp=100 kills=0
+REVIEW wave=1 time=2.0 hp=100 kills=0
+REVIEW wave=2 time=20.1 hp=97 kills=12
+REVIEW wave=3 time=40.3 hp=85 kills=32
+REVIEW wave=4 time=60.3 hp=77 kills=60
+REVIEW wave=5 time=82.1 hp=72 kills=96
+REVIEW ACTIVE time=90.0 wave=5 hp=69 kills=113 punches=114 punch_hits=103 stomps=2 stomp_hits=10
+REVIEW IDLE time=11.8 dead=true wave=5 kills=113
+REVIEW RESTART hp=100 kills=0 wave=0

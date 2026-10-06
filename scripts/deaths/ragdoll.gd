@@ -124,6 +124,10 @@ func _physics_process(delta: float) -> void:
 		var where := get_center()
 		for w in _watchers:
 			var s := w.sample()
+			if director and s >= director.comic_min_speed:
+				var wall := w.wall_contact(director.comic_min_speed)
+				if not wall.is_empty():
+					director.show_wall_comic(self,wall.position,wall.normal,s)
 			if s > impact:
 				impact = s
 				where = w.body.global_position

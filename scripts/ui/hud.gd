@@ -12,6 +12,10 @@ extends CanvasLayer
 @onready var kill_label: Label = %KillLabel
 @onready var banner: Label = %Banner
 
+## Seconds between the Hulk dying and the game-over text appearing, so the death fall
+## (about 1.5 s to hit the ground) plays before the screen gets covered.
+@export var game_over_delay: float = 1.2
+
 var _pound: GroundPound
 var _spawner: WaveSpawner
 var _banner_tween: Tween
@@ -87,4 +91,5 @@ func _on_died() -> void:
 	if _spawner:
 		game_over.text = "THE HULK IS DOWN\nReached wave %d  ·  %d kills\nPress R to rise again" % [_spawner.wave, _spawner.kills]
 	banner.visible = false
+	await get_tree().create_timer(game_over_delay).timeout
 	game_over.visible = true

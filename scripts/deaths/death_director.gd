@@ -41,6 +41,14 @@ signal splatted(position: Vector3)
 
 const RAGDOLL_SCENE := preload("res://scenes/enemies/ragdoll.tscn")
 const FLYING_BODY_SCENE := preload("res://scenes/enemies/flying_body.tscn")
+const WALL_COMIC := preload("res://scripts/vfx/comic_wall_impact.gd")
+
+@export_group("Comic wall impacts")
+@export var comic_impacts_enabled: bool = true
+@export var comic_min_speed: float = 6.5
+@export var comic_max_visible: int = 6
+var _comic_layer: CanvasLayer
+var _comic_index: int = 0
 
 # Splat textures are generated once per game run and shared (see _make_splat_texture).
 static var _splat_textures: Array[ImageTexture] = []
@@ -55,12 +63,49 @@ var _pants_mat: StandardMaterial3D
 
 func _ready() -> void:
 	add_to_group("death_director")
+	_comic_layer = CanvasLayer.new()
+	_comic_layer.layer = 3
+	add_child(_comic_layer)
 	_blood_mat = _flat_mat(blood_color, 0.3)
 	_skin_mat = _flat_mat(Color(0.92, 0.72, 0.55), 0.8)
 	_pants_mat = _flat_mat(Color(0.18, 0.2, 0.28), 0.9)
 	if _splat_textures.is_empty():
 		for i in 4:
 			_splat_textures.append(_make_splat_texture(i))
+
+
+## Shared by living knockback and both corpse representations. Never changes damage.
+func show_wall_comic(source: Node, contact: Vector3, normal: Vector3, speed: float) -> void:
+	if not comic_impacts_enabled or speed < comic_min_speed or absf(normal.y) > 0.35:
+		return
+	var now := Time.get_ticks_msec()
+	if now-int(source.get_meta("comic_wall_last_ms",-10000)) < 900:
+		return
+	if _comic_layer.get_child_count() >= comic_max_visible:
+		return
+	source.set_meta("comic_wall_last_ms",now)
+	var comic := WALL_COMIC.new()
+	comic.word = ["POW!","OOF!","BIFF!"][_comic_index % 3]
+	comic.style = _comic_index % 3
+	comic.anchor = contact+normal*0.2+Vector3.UP*0.25
+	# Stagger nearby simultaneous hits so one burst doesn't cover another's word.
+	var camera := get_viewport().get_camera_3d()
+	if camera:
+		var screen_scale := clampf(get_viewport().get_visible_rect().size.y/1080.0,0.55,1.5)
+		for attempt in range(comic_max_visible):
+			var crowded := false
+			var candidate := camera.unproject_position(comic.anchor)+comic.screen_offset*screen_scale
+			for other in _comic_layer.get_children():
+				var other_position: Vector2 = camera.unproject_position(other.anchor)+other.screen_offset*screen_scale
+				var difference: Vector2 = (candidate-other_position)/screen_scale
+				if absf(difference.x) < 265.0 and absf(difference.y) < 140.0:
+					crowded = true
+					break
+			if not crowded:
+				break
+			comic.screen_offset.y -= 145.0
+	_comic_index += 1
+	_comic_layer.add_child(comic)
 
 
 ## Entry point. Human.kill() calls this; the human frees itself right after.

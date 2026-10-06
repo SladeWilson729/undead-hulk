@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/player/ground_pound.gd" id="4_pound"]
 [ext_resource type="PackedScene" path="res://assets/hulk/hulk_idle.fbx" id="5_model"]
 [ext_resource type="Script" path="res://scripts/player/hulk_animator.gd" id="6_animator"]
+[ext_resource type="Script" path="res://scripts/player/carry_throw.gd" id="7_carry"]
+[ext_resource type="Script" path="res://scripts/audio/hulk_voice.gd" id="8_voice"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.9
@@ -37,3 +39,9 @@ script = ExtResource("4_pound")
 [node name="Animator" type="Node" parent="." node_paths=PackedStringArray("model")]
 script = ExtResource("6_animator")
 model = NodePath("../Visual/Model")
+
+[node name="CarryThrow" type="Node" parent="."]
+script = ExtResource("7_carry")
+
+[node name="Voice" type="AudioStreamPlayer" parent="."]
+script = ExtResource("8_voice")

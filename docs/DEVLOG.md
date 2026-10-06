@@ -44,7 +44,8 @@
 - [ ] Step 8: Juice + art pass
   - [x] 8a: Hulk model + animations (Mixamo zombie hulk: idle, walk, two haymakers, Jump Attack as the ground pound)
   - [x] 8b: Soldier models + animations (4 rigged Mixamo soldiers, Running + Punch Combo) and skeleton ragdolls
-  - [ ] 8c: Hulk run clip, death clip, toon shading, sound
+  - [x] 8c: Hulk death clip (Mixamo Death, keeps its fall-back travel; game-over text waits 1.2 s)
+  - [ ] 8d: Hulk run clip, toon shading, sound
 
 ## Validation log
 **Steps 1-2, 2026-10-05.** I ran an automated headless test against Godot 4.7.2 (Linux), and all 25 checks passed:
@@ -192,16 +193,97 @@ Steps 3 to 8 still pass. Step 6 was updated: it now checks that the ragdoll is t
 - Running (0.7 s loop): the planted foot matches the floor at 2.7 / 3.4 / 3.6 / 3.4 m/s (soldiers A / B / C / D).
 - Punch Combo (2.2 s): four punches between 0.45 and 1.55 s; that window loops while attacking.
 
+**Step 8c (Hulk death), 2026-10-06.** I ran an automated headless test against Godot 4.7.2, and all 9 checks passed:
+- The death clip loads and plays once, keeping its ~1.7 m fall-back travel while the other clips stay pinned.
+- Dying plays it.
+- The game-over text waits during the fall and appears after 1.2 s.
+- The Hulk stays down on the final pose even if keys are pressed.
+- R restarts with him standing.
+
+Steps 3 to 9 still pass (step 7 now waits for the delayed game-over text).
+
+Clip data: Death is 3.0 s long; he hits the ground at ~1.5 s and is still by ~2.1 s.
+
+**Step 8d (Hulk victory), 2026-10-06.** Clearing a wave queues a victory roar (`assets/hulk/victory.fbx`). It plays the next time the Hulk stands still during the break, so a punch or walk in progress finishes first. Moving or attacking cancels it immediately, and the next wave starting cuts it. A dead Hulk never celebrates. I ran an automated headless test against Godot 4.7.2, and all 15 checks passed, including a real wave cleared through the spawner. Steps 3 to 10 still pass (step 8 now expects 7 clips).
+
+Clip data: Victory is 6.2 s long. It is still for ~0.4 s, pumps the right arm from 0.6 to 1.6 s, and roars with both arms up at ~2.4, 3.3 and 4.2 s. It settles by ~5.4 s, and the last 0.8 s is dead frames. We play 0.35 to 5.4 s. The clip drifts ~2 m backward; the hips pin removes that drift.
+
+**Step 9a (breakable pillar, test feature), 2026-10-06.** Added `scripts/level/breakable_pillar.gd` and `scripts/level/rubble_chunk.gd`. Two test pillars sit in main.tscn: Level/PillarEast at (7, 0, -1.5) and Level/PillarWest at (-7, 0, 1.5).
+- A pillar is built in code from 24 brick chunks plus a stump. It's a @tool script, so it shows in the editor; set `size` in the Inspector.
+- A punch (cone reach plus the pillar's half-width) or a ground pound (kill_radius) turns every chunk into a RubbleChunk rigid body. Rubble flies away from the Hulk and fastest at the height of the hit, so the top topples and rains down. The stump stays behind with a small collider.
+- Rubble faster than `kill_speed` (6 m/s) kills any soldier it touches. Rubble passes through the Hulk. It freezes with collision off once it settles, then sinks away after `rubble_lifetime`.
+- Smashing a pillar shakes the camera, adds a hit stop, a dust burst and a "KRAK!" comic.
+- Chunk UVs are built from each chunk's position inside the pillar, with the painterly brick shader's own planar projection and `world_mapping` off. That way the bricks line up before the break and stay glued to the chunks in flight.
+- New collision layer 6 (value 32) is debris. Its mask is world, enemies and debris. Neither the Hulk nor the soldiers mask it.
+
+I ran an automated headless test against Godot 4.7.2, and all 15 checks passed:
+- An intact pillar blocks the Hulk; a punch smashes it into 24 chunks plus a stump.
+- Rubble killed 4 of 6 soldiers standing behind the pillar and flew up to 14 m.
+- All chunks settle and freeze, the Hulk walks through rubble, and a pound smashes the second pillar.
+- Rubble sinks away after its lifetime.
+
+Steps 3 to 11 still pass. Step 8's height check now waits for process frames, because a heavier level load runs several physics frames before the first pose is applied.
+
+**Step 9b (throwable car), 2026-10-06.** Will's car is in `assets/props/car/rusty_sedan.fbx`. It's Tripo AI output with the texture embedded, about 5k triangles, imported at `root_scale` 4.2, so it's 4.2 x 2.1 x 1.6 m with its front at +Z. One car sits in main.tscn at Level/Car (-2.5, 0, 2.2).
+- **Controls:** E picks up the nearest car within 4 m. While holding, E or left click throws it where the Hulk faces.
+- **Lift:** the Overhead Squat clip from 3.5 s (hands on the car) at 2.5x, about 0.9 s. He barely moves during the lift and can't throw until it finishes.
+- **Carry:** the carry_idle and carry_walk clips are built in code from idle/walk legs plus the lift's final overhead pose on the arms, spine and head (`HulkAnimator._with_upper_body`). He moves at 0.75x speed, and punching and pounding are locked.
+- **Throw:** the Throw In clip from 1.0 to 2.2 s at 2x; the car leaves his hands at 1.5 s (0.25 s after the click). The clip's 5.5 m lunge is pinned. The car is glued to the midpoint of his hand bones throughout.
+- **In flight:** 22 m/s forward and -4 m/s vertical, so it slams walls low, plus a flat spin. Its collision layer is 0 and its mask is world.
+  - The CrushZone Area3D (mask enemies, extending 2.4 m below the car) pins soldiers above 10 m/s, up to 6, and kills them above 4 m/s.
+  - A sudden drop in horizontal speed (below 55% in one frame, from at least 7 m/s) is a crush: pinned soldiers explode into gibs, with a "CRUNCH!", shake and hit stop.
+  - It plows through BreakablePillars (smashes them and keeps 85% speed).
+- **Afterwards:** when it settles, survivors drop off as limp bodies and the car is solid cover again and can be thrown again. Falling off the bridge returns it to its start point. If the Hulk dies holding it, it drops.
+- New pieces:
+  - `scripts/props/throwable_car.gd` and `scenes/props/throwable_car.tscn`
+  - `scripts/player/carry_throw.gd` (a node on hulk.tscn)
+  - `Human.pin_to()`
+  - the "grab" input on E
+  - layer 6 named "debris" in project.godot
+
+I ran an automated headless test against Godot 4.7.2, and all 28 checks passed:
+- Lift, carry poses, slower carry walk, throw release on the clip's frame.
+- An open throw killed 5 of 5 soldiers, with up to 5 riding, smashed a pillar and settled about 16 m out.
+- A wall throw crushed 3 pinned soldiers into gibs.
+- The car came back home after being thrown off the bridge, and it drops when the Hulk dies.
+
+Steps 3 to 12 still pass (step 8 now expects 11 clips).
+
+Known look issue: soldiers pinned while the car is still high ride at floor level under it, so they read as swept along rather than splayed on the hood. It reads fine from the gameplay camera; revisit if close-ups matter.
+
+**Step 10a (voice and music), 2026-10-06.** Will's audio is in `assets/sound/`. The music is "Zombie Funfair.wav" (122 s, 48 kHz stereo), set to loop in its import settings. The effects are 17 voiced lines: punch 1-8, ground-pound 1-3, lift-car 1-3, victory 1-3. All of them are voice or growl, mostly two phrases each; there are no impact sounds yet.
+- `default_bus_layout.tres` adds Music (-8 dB), Voice and SFX buses. Mix them in the editor's Audio tab.
+- **Music:** the Music node in main.tscn autoplays on the Music bus and ducks to `music_death_duck_db` (-14 dB) over 1.5 s when the Hulk dies.
+- **Voice** (HulkVoice, `scripts/audio/hulk_voice.gd`, node Hulk/Voice) is one channel with priorities: punch < pound/lift/throw < victory. A line only cuts off a lower-priority one.
+  - Punch lines play on `punch_chance` (35%) of swings, only when he's silent.
+  - Each line gets +/-5% pitch, never repeats the previous one from its list, and starts past its measured lead-in silence (`LEAD_TRIM`, 35-255 ms per file).
+  - It's driven by new signals: `PunchAttack.swung`, `GroundPound.leaped`, `CarryThrow.lifted` and `throw_started`, and `HulkAnimator.victory_started`.
+  - Death stops the voice. `throw_lines` is empty until there's a throw line.
+- The music track ends on about 1 s of decay and opens quietly, so there's a short breath at each 2-minute loop. Set a loop point in an audio editor if it bothers you.
+
+I ran an automated headless test against Godot 4.7.2, and all 16 checks passed: buses, music loop and playback, lead trim, priority blocking, no repeats, punch rationing, pound interrupting a punch line, lift line, victory line through a real wave clear, silence on death, music duck.
+
+Steps 4 to 13 still pass. Step 3's "8+ attackers surround the Hulk" check is still flaky: it reads 6-8 at the 9 s mark, with or without the props. The same happens without this change; it's on the list to look at with the swarm tuning.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
 - **Hulk/PunchAttack:** windup, recovery, move_slow, reach, arc_degrees, max_targets, launch_speed_min/max, launch_lift_min/max
-- **Hulk/Animator:** walk_natural_speed, max_walk_playback, idle_threshold, locomotion_blend, punch_impact_time, punch_end_time, punch_speed, pound_start_time, pound_impact_time, pound_end_time, pound_recover_speed
+- **HUD:** game_over_delay (seconds before the game-over text covers the death fall)
+- **Hulk/Animator:** walk_natural_speed, max_walk_playback, idle_threshold, locomotion_blend, punch_impact_time, punch_end_time, punch_speed, pound_start_time, pound_impact_time, pound_end_time, pound_recover_speed, victory_start_time, victory_end_time, victory_blend
 - **Hulk/GroundPound:** cooldown, hop_speed (0: the clip does the leap), rise_time (0.45 s windup), slam_speed, air_control, kill_radius, shove_radius, lift_center/edge, outward_center/edge, shove_speed
 - **Main > Hit feel:** pound_shake, pound_hit_stop
 - **Human (soldier animation):** max_run_playback, punch_loop_start, punch_loop_end, anim_blend
 - **Ragdoll (scripts/deaths/ragdoll.gd):** lifetime; bone list, capsule radii and masses in the BONES table
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
+- **Hulk/Voice (HulkVoice):** the line lists per event, punch_chance, pitch_variance; bus volumes in the Audio tab
+- **Main > Audio:** music_death_duck_db
+- **ThrowableCar (Level/Car):** throw_speed, throw_lift, throw_spin, pin_speed, kill_speed, max_pinned, crush_speed, crush_drop, respawn_height; CrushZone shape size
+- **Hulk/CarryThrow:** pickup_range, grab_snap_time, lift_move, carry_speed, grip_offset, throw_move, throw_lockout
+- **Hulk/Animator > Carry clips:** lift_start_time, lift_speed, throw_start_time, throw_release_time, throw_end_time, throw_speed
+- **Main > Hit feel:** car_crush_shake, car_crush_shake_per_kill, car_crush_hit_stop
+- **BreakablePillar (Level/PillarEast, PillarWest):** size, layer_height, burst_speed, burst_lift, spread, spin, kill_speed, rubble_lifetime, chunk_mass
+- **Main > Hit feel:** smash_shake, smash_hit_stop
 - **Deaths (DeathDirector in main.tscn):** ragdoll_cap, stain_cap, gib_cap, explode_chance, stain_speed, splat_speed, gibs_per_explosion, blood_color
 - **PunchAttack > Juggle:** juggle_extra_reach, juggle_max_height
 - **FlyingBody (flying_body.tscn):** lifetime, spin, physics material bounce/friction

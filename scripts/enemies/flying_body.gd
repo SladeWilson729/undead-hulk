@@ -66,6 +66,10 @@ func _physics_process(delta: float) -> void:
 		return
 	lifetime -= delta
 	var impact := _watcher.sample()
+	if director and impact >= director.comic_min_speed:
+		var wall := _watcher.wall_contact(director.comic_min_speed)
+		if not wall.is_empty():
+			director.show_wall_comic(self,wall.position,wall.normal,impact)
 	if impact > 0.0 and director:
 		director.on_corpse_impact(self, global_position, impact)
 	if _removed:

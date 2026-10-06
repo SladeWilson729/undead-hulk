@@ -12,6 +12,8 @@ extends Node
 
 ## Emitted on impact. kills = humans launched (0 = slammed empty ground).
 signal pounded(kills: int)
+## Emitted at takeoff.
+signal leaped
 
 enum Phase { READY, RISING, SLAMMING, COOLDOWN }
 
@@ -49,6 +51,9 @@ var phase: Phase = Phase.READY
 var cooldown_remaining: float = 0.0
 var _timer: float = 0.0
 
+@export_group("Presentation")
+@export var impact_effect: PackedScene = preload("res://scenes/vfx/ground_stomp_effect.tscn")
+
 @onready var hulk: Hulk = get_parent()
 
 
@@ -84,6 +89,7 @@ func start() -> void:
 	hulk.move_speed_multiplier = air_control
 	hulk.health.invulnerable = true
 	hulk.animator.play_pound(rise_time)
+	leaped.emit()
 
 
 func is_busy() -> bool:
@@ -127,31 +133,28 @@ func _impact() -> void:
 				corpse.explode()
 				kills += 1
 
+	# Pillars in the kill radius burst outward. Less sideways speed than a punch, the
+	# hit lands low (it's a shockwave along the floor), so the tops topple and rain down.
+	for node in get_tree().get_nodes_in_group("breakables"):
+		var pillar := node as BreakablePillar
+		if pillar == null or pillar.broken:
+			continue
+		var to_pillar := pillar.global_position - center
+		to_pillar.y = 0.0
+		if to_pillar.length() <= kill_radius + pillar.footprint_radius():
+			pillar.take_hit(to_pillar, 0.5, 0.8)
+
 	_spawn_shockwave(center)
 	pounded.emit(kills)
 
 
-## A flat ring that races outward to the kill radius and fades. Placeholder for a real VFX in step 8.
-## Its size matches kill_radius exactly, so the player learns the real blast range by sight.
+## Visuals start on the same frame as damage; their animation does not drive gameplay.
 func _spawn_shockwave(center: Vector3) -> void:
-	var ring := MeshInstance3D.new()
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.85
-	torus.outer_radius = 1.0
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(1.0, 0.85, 0.4, 0.9)
-	torus.material = mat
-	ring.mesh = torus
-	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Animated by a tween every rendered frame, not by physics, so opt out of physics interpolation.
-	ring.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	hulk.get_parent().add_child(ring)
-	ring.global_position = center + Vector3.UP * 0.1
-	ring.scale = Vector3(0.5, 0.15, 0.5)
-	var tween := ring.create_tween().set_parallel(true)
-	tween.tween_property(ring, "scale", Vector3(kill_radius, 0.15, kill_radius), 0.25) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.35)
-	tween.chain().tween_callback(ring.queue_free)
+	if impact_effect == null:
+		return
+	var effect = impact_effect.instantiate()
+	effect.radius = kill_radius
+	effect.pattern_seed = randi()
+	hulk.get_parent().add_child(effect)
+	effect.global_position = center
+	effect.play()

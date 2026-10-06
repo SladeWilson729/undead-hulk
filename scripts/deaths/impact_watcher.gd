@@ -12,6 +12,8 @@ extends RefCounted
 var body: PhysicsBody3D
 var _prev_velocity: Vector3
 var _primed: bool = false
+var _incoming := Vector3.ZERO
+var _velocity_change := Vector3.ZERO
 
 
 func _init(watched: PhysicsBody3D) -> void:
@@ -26,6 +28,24 @@ func sample() -> float:
 		_primed = true
 		_prev_velocity = v
 		return 0.0
-	var change := (_prev_velocity - v).length()
+	_incoming = _prev_velocity
+	_velocity_change = _prev_velocity - v
+	var change := _velocity_change.length()
 	_prev_velocity = v
 	return change
+
+
+## Confirm a sharp horizontal stop against nearby world geometry, excluding floors.
+## Called after sample(). Joint motion alone is not enough to produce a comic burst.
+func wall_contact(min_speed: float) -> Dictionary:
+	var horizontal := Vector3(_incoming.x,0.0,_incoming.z)
+	if horizontal.length() < min_speed or Vector2(_velocity_change.x,_velocity_change.z).length() < min_speed:
+		return {}
+	var origin := body.global_position
+	var query := PhysicsRayQueryParameters3D.create(origin,origin+horizontal.normalized()*0.85,1)
+	var hit := body.get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty() or absf(hit.normal.y) > 0.35:
+		return {}
+	if -_incoming.dot(hit.normal) < min_speed or -_velocity_change.dot(hit.normal) < min_speed:
+		return {}
+	return hit

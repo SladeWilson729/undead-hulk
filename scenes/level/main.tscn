@@ -2,12 +2,17 @@
 
 [ext_resource type="Script" uid="uid://bsff1raywjqli" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://bq07slftd70fm" path="res://scenes/player/hulk.tscn" id="2_hulk"]
+[ext_resource type="Material" path="res://assets/materials/painterly/asphalt.tres" id="3_1o8wa"]
 [ext_resource type="Script" uid="uid://cq4onoh3hc2r6" path="res://scripts/camera/camera_rig.gd" id="3_rig"]
 [ext_resource type="PackedScene" uid="uid://dckwe1tmvproj" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="Material" path="res://assets/materials/painterly/brick.tres" id="4_rjhew"]
 [ext_resource type="Shader" uid="uid://br8k5htg2b7wm" path="res://shaders/grid_floor.gdshader" id="5_grid"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/human.tscn" id="6_human"]
 [ext_resource type="Script" uid="uid://bctbxbt6rk1br" path="res://scripts/deaths/death_director.gd" id="7_deaths"]
 [ext_resource type="Script" uid="uid://dq87aj7mtfefm" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
+[ext_resource type="Script" uid="uid://cbm5lejb367by" path="res://scripts/level/breakable_pillar.gd" id="9_pillar"]
+[ext_resource type="PackedScene" path="res://scenes/props/throwable_car.tscn" id="10_car"]
+[ext_resource type="AudioStream" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -79,7 +84,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Level/Floor" unique_id=331295033]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03263092, 0.039326668, -0.02821827)
 mesh = SubResource("Mesh_floor")
+surface_material_override/0 = ExtResource("3_1o8wa")
 
 [node name="Collision" type="CollisionShape3D" parent="Level/Floor" unique_id=1791031734]
 shape = SubResource("Shape_floor")
@@ -90,6 +97,7 @@ collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Level/WallNorth" unique_id=832299595]
 mesh = SubResource("Mesh_wall")
+surface_material_override/0 = ExtResource("4_rjhew")
 
 [node name="Collision" type="CollisionShape3D" parent="Level/WallNorth" unique_id=1105830373]
 shape = SubResource("Shape_wall")
@@ -100,6 +108,7 @@ collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Level/RailSouth" unique_id=1428337761]
 mesh = SubResource("Mesh_rail")
+surface_material_override/0 = ExtResource("4_rjhew")
 
 [node name="Collision" type="CollisionShape3D" parent="Level/RailSouth" unique_id=1567306260]
 shape = SubResource("Shape_rail")
@@ -110,6 +119,7 @@ collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Level/CapWest" unique_id=61272973]
 mesh = SubResource("Mesh_cap")
+surface_material_override/0 = ExtResource("4_rjhew")
 
 [node name="Collision" type="CollisionShape3D" parent="Level/CapWest" unique_id=209533593]
 shape = SubResource("Shape_cap")
@@ -120,9 +130,21 @@ collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Level/CapEast" unique_id=60177821]
 mesh = SubResource("Mesh_cap")
+surface_material_override/0 = ExtResource("4_rjhew")
 
 [node name="Collision" type="CollisionShape3D" parent="Level/CapEast" unique_id=444007640]
 shape = SubResource("Shape_cap")
+
+[node name="PillarEast" type="StaticBody3D" parent="Level" unique_id=700809822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -1.5)
+script = ExtResource("9_pillar")
+
+[node name="PillarWest" type="StaticBody3D" parent="Level" unique_id=1708188301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 1.5)
+script = ExtResource("9_pillar")
+
+[node name="Car" parent="Level" instance=ExtResource("10_car")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.5, 0, 2.2)
 
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
 
@@ -147,3 +169,8 @@ current = true
 fov = 50.0
 
 [node name="HUD" parent="." unique_id=443355167 instance=ExtResource("4_hud")]
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("11_music")
+autoplay = true
+bus = &"Music"

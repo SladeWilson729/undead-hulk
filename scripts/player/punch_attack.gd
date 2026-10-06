@@ -13,6 +13,8 @@ extends Node
 
 ## Emitted on the strike frame. hits = how many humans got launched (0 = whiff).
 signal punched(hits: int)
+## Emitted when a punch starts (the click). Voice efforts hang off this, not the impact.
+signal swung
 
 enum Phase { READY, WINDUP, RECOVERY }
 
@@ -83,6 +85,7 @@ func start() -> void:
 	# Alternate fists: left, right, left... reads as a flurry when you hold the button.
 	hulk.animator.play_punch(_use_left, windup)
 	_use_left = not _use_left
+	swung.emit()
 
 
 func _strike() -> void:
@@ -101,7 +104,20 @@ func _strike() -> void:
 		launch.y = randf_range(launch_lift_min, launch_lift_max)
 		human.kill(launch)
 	var juggles := _juggle_airborne_bodies()
+	_smash_breakables()
 	punched.emit(targets.size() + juggles)
+
+
+## Pillars (anything in the "breakables" group) inside the cone get smashed. Reach is
+## measured to the pillar's center, so its half-width is added: you hit its face.
+func _smash_breakables() -> void:
+	for node in get_tree().get_nodes_in_group("breakables"):
+		var pillar := node as BreakablePillar
+		if pillar == null or pillar.broken:
+			continue
+		if _in_cone(pillar.global_position, reach + pillar.footprint_radius()):
+			# Rubble flies straight away from the Hulk, at fist height.
+			pillar.take_hit(pillar.global_position - hulk.global_position, 1.6, 1.0)
 
 
 ## Juggle: any dead body still falling through the cone explodes.

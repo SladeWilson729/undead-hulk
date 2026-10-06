@@ -43,6 +43,10 @@ const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 @export var punch_loop_end: float = 1.55
 @export var anim_blend: float = 0.15
 
+@export_group("Painterly look")
+@export var painterly_enabled: bool = true
+@export var paint_style: ShaderMaterial = preload("res://assets/materials/painterly/soldier_character.tres")
+
 var target: Hulk
 var state: State = State.CHASE
 var _speed: float
@@ -115,7 +119,16 @@ func _physics_process(delta: float) -> void:
 	horizontal = horizontal.move_toward(desired, acceleration * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
+	var incoming := velocity
 	move_and_slide()
+	for collision_index in range(get_slide_collision_count()):
+		var collision := get_slide_collision(collision_index)
+		var collider := collision.get_collider() as CollisionObject3D
+		if collider == null or (collider.collision_layer & 1) == 0:
+			continue
+		var director := get_tree().get_first_node_in_group("death_director") as DeathDirector
+		if director:
+			director.show_wall_comic(self,collision.get_position(),collision.get_normal(),-incoming.dot(collision.get_normal()))
 	_animate()
 
 
@@ -127,6 +140,8 @@ func _build_model() -> void:
 	_run_speed = variant.run_speed
 	model = data.scene.instantiate()
 	visual.add_child(model)
+	if painterly_enabled:
+		preload("res://scripts/vfx/character_paint.gd").apply_to(model,paint_style)
 	# Mixamo characters face +Z; Godot's forward is -Z.
 	model.rotation.y = PI
 	_ap = SoldierVariants.find_player(model)
@@ -173,6 +188,25 @@ func _face(dir: Vector3, delta: float) -> void:
 func shove(push_velocity: Vector3) -> void:
 	velocity.x = push_velocity.x
 	velocity.z = push_velocity.z
+
+
+## Hit by a thrown car: dies (counts as a kill) but his body rides the car, stuck to it.
+## Returns the visual so the car can crush it against a wall or drop it later.
+## Returns null if he was already dead.
+func pin_to(carrier: Node3D) -> Node3D:
+	if _dead:
+		return null
+	_dead = true
+	remove_from_group("enemies")
+	var pinned := visual
+	pinned.reparent(carrier, true)
+	# Freeze him mid-stride: splayed against the car.
+	var player := SoldierVariants.find_player(pinned)
+	if player:
+		player.pause()
+	died.emit(self)
+	queue_free()
+	return pinned
 
 
 ## One-hit death. Hands off to the level's DeathDirector, which picks ragdoll, cheap body,

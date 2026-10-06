@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+res://assets/hulk/hulk_idle.fbx
+tripo_node_aadabc53 / 0 color=(1.0, 1.0, 1.0, 1.0) texture=(res://assets/hulk/hulk_idle_0.png):<CompressedTexture2D#-9223372010212555307> normal=true alpha=0 cull=0 uv=(1.0, 1.0, 1.0)
+res://assets/humans/soldier_a_run.fbx
+tripo_node_b7f21daa / 0 color=(1.0, 1.0, 1.0, 1.0) texture=(res://assets/humans/soldier_a_run_0.png):<CompressedTexture2D#-9223372009491135013> normal=false alpha=0 cull=0 uv=(1.0, 1.0, 1.0)
+res://assets/humans/soldier_b_run.fbx
+tripo_node_ed5e4c81 / 0 color=(1.0, 1.0, 1.0, 1.0) texture=(res://assets/humans/soldier_b_run_0.png):<CompressedTexture2D#-9223372008971041322> normal=false alpha=0 cull=0 uv=(1.0, 1.0, 1.0)
+res://assets/humans/soldier_c_run.fbx
+tripo_node_70193851 / 0 color=(1.0, 1.0, 1.0, 1.0) texture=(res://assets/humans/soldier_c_run_0.png):<CompressedTexture2D#-9223372008450947622> normal=false alpha=0 cull=0 uv=(1.0, 1.0, 1.0)
+res://assets/humans/soldier_d_run.fbx
+tripo_node_1c370529 / 0 color=(1.0, 1.0, 1.0, 1.0) texture=(res://assets/humans/soldier_d_run_0.png):<CompressedTexture2D#-9223372007930853928> normal=false alpha=0 cull=0 uv=(1.0, 1.0, 1.0)
