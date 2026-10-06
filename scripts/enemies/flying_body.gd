@@ -16,7 +16,8 @@ const AIRBORNE_HEIGHT := 1.2
 @export var kill_height: float = -30.0
 
 var director: DeathDirector
-var shirt: Material
+## Uniform-colored material for gibs if this body is exploded.
+var gib_material: Material
 var small_stains_left: int = 2
 
 var _watcher: ImpactWatcher
@@ -48,7 +49,7 @@ func explode() -> void:
 	if _removed:
 		return
 	if director:
-		director.explode_at(global_position, linear_velocity, shirt)
+		director.explode_at(global_position, linear_velocity, gib_material)
 	remove_now()
 
 

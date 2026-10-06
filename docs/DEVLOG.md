@@ -3,7 +3,7 @@
 ## Locked decisions
 | Decision | Choice |
 |---|---|
-| Engine | Godot 4.8 dev build (project was saved by 4.8; tests run on 4.8-dev7) |
+| Engine | Godot 4.7 stable (moved off the 4.8 dev build on 2026-10-06; tests run on 4.7.2) |
 | Physics | Jolt (Project Settings > Physics > 3D) |
 | Camera | High angle, fixed rotation, follows Hulk with mouse look-ahead |
 | Platform | PC first, mobile later |
@@ -43,7 +43,8 @@
 - [x] Step 7: Wave spawner. Clear-to-advance waves: 12 + 8 per wave, alternating ends, +4% human speed per wave (capped at 1.3x), max 60 alive. 5 s breaks. HUD: wave, kills, banners, game-over summary. Debug spawner and F key removed; H only works in editor builds.
 - [ ] Step 8: Juice + art pass
   - [x] 8a: Hulk model + animations (Mixamo zombie hulk: idle, walk, two haymakers, Jump Attack as the ground pound)
-  - [ ] 8b: Run clip, death clip, human models, toon shading, sound
+  - [x] 8b: Soldier models + animations (4 rigged Mixamo soldiers, Running + Punch Combo) and skeleton ragdolls
+  - [ ] 8c: Hulk run clip, death clip, toon shading, sound
 
 ## Validation log
 **Steps 1-2, 2026-10-05.** I ran an automated headless test against Godot 4.7.2 (Linux), and all 25 checks passed:
@@ -169,6 +170,28 @@ All the Hulk clips share one skeleton, so no retargeting is needed. Root motion 
 
 Raw downloads were moved to `assets/_raw/`. That folder is skipped by Godot (`.gdignore`) and by git.
 
+**Step 8b (soldiers), 2026-10-06.** I ran an automated headless test against Godot 4.7.2, and all 37 checks passed:
+- All 4 soldiers build at 1.80 m with no node scaling, and random spawns use all 4.
+- Running plays at a rate matched to ground speed, and attacking soldiers loop the Punch Combo flurry.
+- Each soldier type, including the 41-bone rig, builds an 11-body skeleton ragdoll that launches, lands on the floor, and stays in one piece.
+- Juggling a soldier ragdoll explodes him into gibs in his uniform color.
+- Ragdolls sink and free themselves after their lifetime.
+- The ragdoll cap holds under stress.
+
+Steps 3 to 8 still pass. Step 6 was updated: it now checks that the ragdoll is the soldier's own model rather than a shirt color.
+
+**Stress test** (60 soldiers, a pound plus punches): physics averaged 7.4-8.0 ms and peaked at 15.7-18.6 ms on a slow cloud CPU. That's about the same as the capsule people. **The render cost of 60 skinned soldiers still needs measuring on Will's PC.**
+
+**Soldier pipeline:**
+- Files: `assets/humans/soldier_X_run.fbx` (model, textures and Running, imported as a scene) and `soldier_X_punch.fbx` (Punch Combo only, imported as an Animation Library).
+- `nodes/root_scale` in each `.import` makes the soldier 1.8 m tall. Don't scale the node instead: physics bodies (the ragdoll) can't be scaled.
+- Variants live in `scripts/enemies/soldier_variants.gd`, along with their measured run speeds.
+- Ragdoll bodies are built in code (`scripts/deaths/ragdoll.gd`) from 11 Mixamo bone names, so any Mixamo soldier works without editing a scene.
+
+**Measured clip data:**
+- Running (0.7 s loop): the planted foot matches the floor at 2.7 / 3.4 / 3.6 / 3.4 m/s (soldiers A / B / C / D).
+- Punch Combo (2.2 s): four punches between 0.45 and 1.55 s; that window loops while attacking.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -176,11 +199,11 @@ Raw downloads were moved to `assets/_raw/`. That folder is skipped by Godot (`.g
 - **Hulk/Animator:** walk_natural_speed, max_walk_playback, idle_threshold, locomotion_blend, punch_impact_time, punch_end_time, punch_speed, pound_start_time, pound_impact_time, pound_end_time, pound_recover_speed
 - **Hulk/GroundPound:** cooldown, hop_speed (0: the clip does the leap), rise_time (0.45 s windup), slam_speed, air_control, kill_radius, shove_radius, lift_center/edge, outward_center/edge, shove_speed
 - **Main > Hit feel:** pound_shake, pound_hit_stop
+- **Human (soldier animation):** max_run_playback, punch_loop_start, punch_loop_end, anim_blend
+- **Ragdoll (scripts/deaths/ragdoll.gd):** lifetime; bone list, capsule radii and masses in the BONES table
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
 - **Deaths (DeathDirector in main.tscn):** ragdoll_cap, stain_cap, gib_cap, explode_chance, stain_speed, splat_speed, gibs_per_explosion, blood_color
-- **Ragdoll (ragdoll.tscn):** lifetime, part masses, joint swing/twist spans
 - **PunchAttack > Juggle:** juggle_extra_reach, juggle_max_height
-- **Human > Animation:** stride_rate, leg_swing, attack_arm_raise
 - **FlyingBody (flying_body.tscn):** lifetime, spin, physics material bounce/friction
 - **Main > Hit feel:** hit_stop_duration, hit_stop_time_scale, punch_shake, punch_shake_per_hit
 - **CameraRig > Shake:** shake_decay, max_shake_offset

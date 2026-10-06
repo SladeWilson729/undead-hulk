@@ -6,45 +6,6 @@
 radius = 0.4
 height = 1.8
 
-[sub_resource type="StandardMaterial3D" id="Mat_shirt"]
-albedo_color = Color(0.2, 0.4, 0.8, 1)
-roughness = 0.85
-
-[sub_resource type="StandardMaterial3D" id="Mat_skin"]
-albedo_color = Color(0.92, 0.72, 0.55, 1)
-roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="Mat_pants"]
-albedo_color = Color(0.18, 0.2, 0.28, 1)
-roughness = 0.9
-
-[sub_resource type="StandardMaterial3D" id="Mat_nose"]
-albedo_color = Color(0.1, 0.1, 0.1, 1)
-
-[sub_resource type="CapsuleMesh" id="Mesh_torso"]
-material = SubResource("Mat_shirt")
-radius = 0.3
-height = 0.8
-
-[sub_resource type="SphereMesh" id="Mesh_head"]
-material = SubResource("Mat_skin")
-radius = 0.22
-height = 0.44
-
-[sub_resource type="BoxMesh" id="Mesh_nose"]
-material = SubResource("Mat_nose")
-size = Vector3(0.1, 0.07, 0.12)
-
-[sub_resource type="CapsuleMesh" id="Mesh_arm"]
-material = SubResource("Mat_shirt")
-radius = 0.1
-height = 0.66
-
-[sub_resource type="CapsuleMesh" id="Mesh_leg"]
-material = SubResource("Mat_pants")
-radius = 0.12
-height = 0.68
-
 [node name="Human" type="CharacterBody3D"]
 collision_layer = 4
 collision_mask = 7
@@ -55,43 +16,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("Shape_body")
 
 [node name="Visual" type="Node3D" parent="."]
-
-[node name="Body" type="MeshInstance3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
-mesh = SubResource("Mesh_torso")
-
-[node name="Head" type="MeshInstance3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
-mesh = SubResource("Mesh_head")
-
-[node name="Nose" type="MeshInstance3D" parent="Visual/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22)
-mesh = SubResource("Mesh_nose")
-
-[node name="ArmL" type="Node3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 1.4, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/ArmL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.33, 0)
-mesh = SubResource("Mesh_arm")
-
-[node name="ArmR" type="Node3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, 1.4, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/ArmR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.33, 0)
-mesh = SubResource("Mesh_arm")
-
-[node name="LegL" type="Node3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.68, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/LegL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.34, 0)
-mesh = SubResource("Mesh_leg")
-
-[node name="LegR" type="Node3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.68, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Visual/LegR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.34, 0)
-mesh = SubResource("Mesh_leg")

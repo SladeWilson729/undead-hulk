@@ -64,22 +64,23 @@ func _ready() -> void:
 
 
 ## Entry point. Human.kill() calls this; the human frees itself right after.
+## Ragdolls and cheap bodies take over the soldier's own model, so the corpse is the same
+## soldier, in the same pose, as the one that just got hit.
 func spawn_death(human: Human, launch_velocity: Vector3) -> void:
-	var xform := human.global_transform
-	var shirt := human.shirt_material
 	if randf() < explode_chance:
-		explode_at(xform.origin + Vector3.UP * 0.9, launch_velocity, shirt)
+		explode_at(human.global_position + Vector3.UP * 0.9, launch_velocity, human.gib_material)
 	elif active_ragdolls < ragdoll_cap:
-		_spawn_ragdoll(xform, shirt, launch_velocity)
+		_spawn_ragdoll(human, launch_velocity)
 	else:
 		_spawn_cheap_body(human, launch_velocity)
 
 
-func _spawn_ragdoll(xform: Transform3D, shirt: Material, launch_velocity: Vector3) -> void:
+func _spawn_ragdoll(human: Human, launch_velocity: Vector3) -> void:
 	var ragdoll: Ragdoll = RAGDOLL_SCENE.instantiate()
 	add_child(ragdoll)
-	ragdoll.global_transform = xform
-	ragdoll.setup(shirt, self)
+	ragdoll.global_transform = human.global_transform
+	human.visual.reparent(ragdoll, true)
+	ragdoll.setup(human.visual, human.gib_material, self)
 	ragdoll.launch(launch_velocity)
 	active_ragdolls += 1
 	ragdoll.tree_exiting.connect(func() -> void: active_ragdolls -= 1)
@@ -91,8 +92,12 @@ func _spawn_cheap_body(human: Human, launch_velocity: Vector3) -> void:
 	# The rigid body spins around its center, so place it at mid-height, not at the feet.
 	body.global_transform = Transform3D(human.global_basis, human.global_position + Vector3.UP * 0.9)
 	human.visual.reparent(body, true)
+	# Freeze the soldier mid-pose; the whole body tumbles as one stiff piece.
+	var player := SoldierVariants.find_player(human.visual)
+	if player:
+		player.pause()
 	body.director = self
-	body.shirt = human.shirt_material
+	body.gib_material = human.gib_material
 	body.reset_physics_interpolation()
 	body.launch(launch_velocity)
 
@@ -115,9 +120,10 @@ func splat_at(position: Vector3) -> void:
 	splatted.emit(position)
 
 
-## Blows a body (or a living human, on the random roll) into gibs.
-func explode_at(center: Vector3, inherit_velocity: Vector3, shirt: Material) -> void:
-	var mats: Array[Material] = [shirt, _skin_mat, _blood_mat, _pants_mat, _blood_mat]
+## Blows a body (or a living soldier, on the random roll) into gibs.
+func explode_at(center: Vector3, inherit_velocity: Vector3, uniform: Material) -> void:
+	# Chunks in the soldier's uniform color, skin, and plenty of cartoon red.
+	var mats: Array[Material] = [uniform, _skin_mat, _blood_mat, _pants_mat, _blood_mat]
 	var count := mini(gibs_per_explosion, gib_cap - active_gibs)
 	for i in count:
 		var gib := Gib.create(randf_range(0.14, 0.3), mats[i % mats.size()])

@@ -8,18 +8,19 @@ extends RefCounted
 ## 10+ m/s in one frame. That jump IS the impact strength. No contact monitoring needed,
 ## which keeps it cheap with dozens of bodies in the air.
 
-var body: RigidBody3D
+## A RigidBody3D or a ragdoll PhysicalBone3D: anything with a linear_velocity.
+var body: PhysicsBody3D
 var _prev_velocity: Vector3
 var _primed: bool = false
 
 
-func _init(watched: RigidBody3D) -> void:
+func _init(watched: PhysicsBody3D) -> void:
 	body = watched
 
 
 ## Call once per physics frame. Returns the impact strength in m/s (0 when flying freely).
 func sample() -> float:
-	var v := body.linear_velocity
+	var v: Vector3 = body.get("linear_velocity")
 	if not _primed:
 		# First frame: the body was just launched, so there's no real "previous" velocity yet.
 		_primed = true

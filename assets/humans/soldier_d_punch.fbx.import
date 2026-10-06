@@ -3,13 +3,13 @@
 importer="animation_library"
 importer_version=1
 type="AnimationLibrary"
-uid="uid://b3j4ryfu8c4vi"
-path="res://.godot/imported/hulk_jump_attack.fbx-84730570c4e981ed25e87dc3b6d2d2c6.res"
+uid="uid://dodnuab50yke5"
+path="res://.godot/imported/soldier_d_punch.fbx-2c6b554d87e320eeb381b3dac014551f.res"
 
 [deps]
 
-source_file="res://assets/hulk/hulk_jump_attack.fbx"
-dest_files=["res://.godot/imported/hulk_jump_attack.fbx-84730570c4e981ed25e87dc3b6d2d2c6.res"]
+source_file="res://assets/humans/soldier_d_punch.fbx"
+dest_files=["res://.godot/imported/soldier_d_punch.fbx-2c6b554d87e320eeb381b3dac014551f.res"]
 
 [params]
 
@@ -19,7 +19,7 @@ nodes/root_script=null
 mesh_library/use_node_names_as_mesh_names=false
 array_mesh/deduplicate_surfaces=true
 nodes/apply_root_scale=true
-nodes/root_scale=1.0
+nodes/root_scale=2.0022
 nodes/import_as_skeleton_bones=false
 nodes/use_name_suffixes=true
 nodes/use_node_type_suffixes=true

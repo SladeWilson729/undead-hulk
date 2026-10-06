@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://clkfwlcu22ryl"
-path.s3tc="res://.godot/imported/hulk_idle_1.png-5a4f3afdd3bf9939448cf76218050358.s3tc.ctex"
+uid="uid://c8ou21wr2aqti"
+path.s3tc="res://.godot/imported/soldier_b_run_0.png-519347ac8b342633383604b9ee534697.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "154c8e4fc2f5aa9353fc6c786fd3f272"
+"md5": "3b3195d3ba997eba3205280ed0ddd266"
 }
 
 [deps]
 
-source_file="res://assets/hulk/hulk_idle_1.png"
-dest_files=["res://.godot/imported/hulk_idle_1.png-5a4f3afdd3bf9939448cf76218050358.s3tc.ctex"]
+source_file="res://assets/humans/soldier_b_run_0.png"
+dest_files=["res://.godot/imported/soldier_b_run_0.png-519347ac8b342633383604b9ee534697.s3tc.ctex"]
 
 [params]
 
@@ -25,12 +25,12 @@ compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=1
+compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1
-roughness/mode=1
-roughness/src_normal="res://assets/hulk/hulk_idle_1.png"
+roughness/mode=0
+roughness/src_normal=""
 process/channel_remap/red=0
 process/channel_remap/green=1
 process/channel_remap/blue=2

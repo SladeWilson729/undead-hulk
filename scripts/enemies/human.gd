@@ -1,8 +1,9 @@
 class_name Human
 extends CharacterBody3D
-## A run-of-the-mill human trying to stop the Hulk.
-## Chases in a straight line, piles up around the Hulk, and slaps it for 1 damage
-## on its own cooldown. Dies in one hit (step 4 calls kill()).
+## A run-of-the-mill soldier trying to stop the Hulk.
+## Chases in a straight line, piles up around the Hulk, and punches it for 1 damage
+## on its own cooldown. Dies in one hit: attacks call kill().
+## Looks: one of the rigged soldiers in SoldierVariants, picked at random on spawn.
 
 signal died(human: Human)
 
@@ -34,15 +35,13 @@ const BODY_RADIUS := 0.4
 const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 
 @export_group("Animation")
-## Leg/arm swing speed per m/s of movement.
-@export var stride_rate: float = 2.2
-## Leg swing in radians at full speed.
-@export var leg_swing: float = 0.7
-## How far the arms raise toward the Hulk while attacking (radians; 1.57 = straight forward).
-@export var attack_arm_raise: float = 1.4
-
-## Shirt colors so the crowd reads as individuals. Created once and shared by every human (cheap).
-static var _shirt_materials: Array[StandardMaterial3D] = []
+## Fastest the Running clip may play. Above this the legs blur; a little foot slide is better.
+@export var max_run_playback: float = 2.2
+## Punch Combo throws four punches between ~0.45 s and ~1.55 s. While attacking we loop that
+## window. Damage stays on attack_cooldown; the animation is purely visual.
+@export var punch_loop_start: float = 0.45
+@export var punch_loop_end: float = 1.55
+@export var anim_blend: float = 0.15
 
 var target: Hulk
 var state: State = State.CHASE
@@ -51,15 +50,18 @@ var _flank_side: float  # +1 or -1: which way this human circles. Random so the 
 var _cooldown: float = 0.0
 var _dead: bool = false
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-var _stride: float = 0.0
-## The shirt color this human rolled. DeathDirector passes it to the corpse so the body matches.
-var shirt_material: StandardMaterial3D
+## Which soldier this is (an entry from SoldierVariants.VARIANTS). Set before add_child to
+## force one (tests do); otherwise it's rolled in _ready().
+var variant: Dictionary = {}
+## The soldier model instance (child of Visual). DeathDirector hands it to the corpse.
+var model: Node3D
+## Uniform-colored material for this soldier's gibs when he explodes.
+var gib_material: Material
+
+var _ap: AnimationPlayer
+var _run_speed: float = 3.0
 
 @onready var visual: Node3D = $Visual
-@onready var arm_l: Node3D = $Visual/ArmL
-@onready var arm_r: Node3D = $Visual/ArmR
-@onready var leg_l: Node3D = $Visual/LegL
-@onready var leg_r: Node3D = $Visual/LegR
 
 
 func _ready() -> void:
@@ -68,10 +70,7 @@ func _ready() -> void:
 	# Stagger the first swing so a group that arrives together doesn't hit in perfect sync.
 	_cooldown = randf_range(0.0, 0.4)
 	_flank_side = 1.0 if randf() < 0.5 else -1.0
-	shirt_material = _random_shirt()
-	for mesh_path in ["Visual/Body", "Visual/ArmL/Mesh", "Visual/ArmR/Mesh"]:
-		(get_node(mesh_path) as MeshInstance3D).material_override = shirt_material
-	_stride = randf() * TAU  # Start mid-stride so the crowd doesn't step in unison.
+	_build_model()
 	if target == null:
 		target = get_tree().get_first_node_in_group("player") as Hulk
 
@@ -117,28 +116,41 @@ func _physics_process(delta: float) -> void:
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	move_and_slide()
-	_animate(delta)
+	_animate()
 
 
-## Procedural run cycle: legs and arms swing opposite each other, scaled by speed.
-## While attacking, both arms reach forward and slap. Runs in the physics step so it
-## stays smooth with physics interpolation. Throwaway once real animated models arrive (step 8).
-func _animate(delta: float) -> void:
-	var speed := Vector2(velocity.x, velocity.z).length()
-	_stride += delta * speed * stride_rate
-	var amount := clampf(speed / move_speed, 0.0, 1.0)
-	var swing := sin(_stride) * amount
-	leg_l.rotation.x = swing * leg_swing
-	leg_r.rotation.x = -swing * leg_swing
-	var weight := 1.0 - exp(-15.0 * delta)
-	var arm_l_target := -swing * leg_swing * 0.8
-	var arm_r_target := swing * leg_swing * 0.8
+func _build_model() -> void:
+	if variant.is_empty():
+		variant = SoldierVariants.pick_random()
+	var data := SoldierVariants.data_for(variant)
+	gib_material = data.gib_material
+	_run_speed = variant.run_speed
+	model = data.scene.instantiate()
+	visual.add_child(model)
+	# Mixamo characters face +Z; Godot's forward is -Z.
+	model.rotation.y = PI
+	_ap = SoldierVariants.find_player(model)
+	_ap.add_animation_library("soldier", data.library)
+	_ap.play("soldier/run")
+	# Start each soldier at a random point in the stride so the crowd doesn't step in unison.
+	_ap.seek(randf() * _ap.current_animation_length, true)
+
+
+## Running scales with actual ground speed; attacking loops the punch flurry.
+func _animate() -> void:
 	if state == State.ATTACK:
-		# Positive X rotation swings a hanging arm forward (toward -Z, where we face).
-		arm_l_target = attack_arm_raise + sin(_stride * 3.0) * 0.2
-		arm_r_target = attack_arm_raise - sin(_stride * 3.0) * 0.2
-	arm_l.rotation.x = lerpf(arm_l.rotation.x, arm_l_target, weight)
-	arm_r.rotation.x = lerpf(arm_r.rotation.x, arm_r_target, weight)
+		if _ap.current_animation != "soldier/punch":
+			_ap.play("soldier/punch", anim_blend)
+			_ap.seek(punch_loop_start, true)
+		elif _ap.current_animation_position >= punch_loop_end:
+			_ap.seek(punch_loop_start, true)
+		_ap.speed_scale = 1.0
+		return
+	if _ap.current_animation != "soldier/run":
+		_ap.play("soldier/run", anim_blend)
+	var speed := Vector2(velocity.x, velocity.z).length()
+	# Nearly stopped (e.g. the Hulk is dead): freeze mid-stride rather than moonwalk.
+	_ap.speed_scale = 0.0 if speed < 0.3 else clampf(speed / _run_speed, 0.4, max_run_playback)
 
 
 func _try_attack() -> void:
@@ -188,13 +200,3 @@ func kill(launch_velocity: Vector3 = Vector3.ZERO) -> void:
 	body.launch(launch_velocity)
 	died.emit(self)
 	queue_free()
-
-
-static func _random_shirt() -> StandardMaterial3D:
-	if _shirt_materials.is_empty():
-		for c in [Color(0.2, 0.4, 0.8), Color(0.85, 0.75, 0.2), Color(0.55, 0.25, 0.6), Color(0.9, 0.45, 0.15), Color(0.35, 0.35, 0.38)]:
-			var m := StandardMaterial3D.new()
-			m.albedo_color = c
-			m.roughness = 0.85
-			_shirt_materials.append(m)
-	return _shirt_materials.pick_random()

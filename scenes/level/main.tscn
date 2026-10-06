@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://dvrf37temc0g3"]
 
 [ext_resource type="Script" uid="uid://bsff1raywjqli" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="PackedScene" path="res://scenes/player/hulk.tscn" id="2_hulk"]
+[ext_resource type="PackedScene" uid="uid://bq07slftd70fm" path="res://scenes/player/hulk.tscn" id="2_hulk"]
 [ext_resource type="Script" uid="uid://cq4onoh3hc2r6" path="res://scripts/camera/camera_rig.gd" id="3_rig"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://dckwe1tmvproj" path="res://scenes/ui/hud.tscn" id="4_hud"]
 [ext_resource type="Shader" uid="uid://br8k5htg2b7wm" path="res://shaders/grid_floor.gdshader" id="5_grid"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/human.tscn" id="6_human"]
-[ext_resource type="Script" path="res://scripts/deaths/death_director.gd" id="7_deaths"]
-[ext_resource type="Script" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
+[ext_resource type="Script" uid="uid://bctbxbt6rk1br" path="res://scripts/deaths/death_director.gd" id="7_deaths"]
+[ext_resource type="Script" uid="uid://dq87aj7mtfefm" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -60,14 +60,6 @@ size = Vector3(1, 4, 10)
 
 [sub_resource type="BoxShape3D" id="Shape_cap"]
 size = Vector3(1, 4, 10)
-
-[sub_resource type="StandardMaterial3D" id="Mat_human"]
-albedo_color = Color(0.85, 0.6, 0.35, 1)
-
-[sub_resource type="CapsuleMesh" id="Mesh_human"]
-material = SubResource("Mat_human")
-radius = 0.4
-height = 1.8
 
 [node name="Main" type="Node3D" unique_id=880567166]
 script = ExtResource("1_main")
@@ -132,25 +124,14 @@ mesh = SubResource("Mesh_cap")
 [node name="Collision" type="CollisionShape3D" parent="Level/CapEast" unique_id=444007640]
 shape = SubResource("Shape_cap")
 
-[node name="ScaleReference" type="MeshInstance3D" parent="Level" unique_id=1636424884]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.9, -2)
-mesh = SubResource("Mesh_human")
-
-[node name="Label" type="Label3D" parent="Level/ScaleReference" unique_id=691780158]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
-billboard = 1
-text = "1.8 m human"
-font_size = 48
-outline_size = 10
-
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
 
-[node name="Enemies" type="Node3D" parent="."]
+[node name="Enemies" type="Node3D" parent="." unique_id=1149726450]
 
-[node name="Deaths" type="Node3D" parent="."]
+[node name="Deaths" type="Node3D" parent="." unique_id=1413311671]
 script = ExtResource("7_deaths")
 
-[node name="Spawner" type="Node" parent="." node_paths=PackedStringArray("container", "target")]
+[node name="Spawner" type="Node" parent="." unique_id=1684782036 node_paths=PackedStringArray("container", "target")]
 script = ExtResource("8_spawner")
 human_scene = ExtResource("6_human")
 container = NodePath("../Enemies")
