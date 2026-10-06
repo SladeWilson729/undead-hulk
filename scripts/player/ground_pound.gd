@@ -19,9 +19,11 @@ enum Phase { READY, RISING, SLAMMING, COOLDOWN }
 ## Seconds before the pound can be used again, counted from impact.
 @export var cooldown: float = 4.0
 ## Upward speed of the hop (m/s).
-@export var hop_speed: float = 6.5
-## How long the Hulk rises before slamming down.
-@export var rise_time: float = 0.22
+## Upward speed of a physical hop (m/s). 0 since the Mixamo Jump Attack clip does the
+## jumping visually; the body stays on the ground so the clip's own leap isn't doubled.
+@export var hop_speed: float = 0.0
+## Seconds from button press to the slam. The animator stretches the clip to fit this.
+@export var rise_time: float = 0.45
 ## Downward speed of the slam (m/s). Faster = punchier landing.
 @export var slam_speed: float = 28.0
 ## Movement speed multiplier while airborne. Small but not zero, so you can nudge your landing spot.
@@ -81,6 +83,7 @@ func start() -> void:
 	hulk.velocity.y = hop_speed
 	hulk.move_speed_multiplier = air_control
 	hulk.health.invulnerable = true
+	hulk.animator.play_pound(rise_time)
 
 
 func is_busy() -> bool:
@@ -93,6 +96,7 @@ func _impact() -> void:
 	hulk.velocity.y = 0.0
 	hulk.move_speed_multiplier = 1.0
 	hulk.health.invulnerable = false
+	hulk.animator.pound_landed()
 
 	var center := hulk.global_position
 	var kills := 0

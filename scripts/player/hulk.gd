@@ -21,9 +21,12 @@ extends CharacterBody3D
 @export var shove_strength: float = 1.3
 
 @onready var health: Health = $Health
-@onready var body_mesh: MeshInstance3D = $Visual/Body
 @onready var punch: PunchAttack = $PunchAttack
 @onready var pound: GroundPound = $GroundPound
+@onready var animator: HulkAnimator = $Animator
+## The skinned mesh inside the imported model. Found by search so swapping the model file
+## (new Mixamo export, different node names) doesn't break the hurt flash.
+@onready var body_mesh: MeshInstance3D = _find_mesh($Visual/Model)
 
 ## Set by Main. The Hulk needs the camera to project the mouse onto the floor.
 var camera: Camera3D
@@ -65,6 +68,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_shove_humans()
+	animator.update_locomotion(Vector2(velocity.x, velocity.z).length())
 
 	if not health.is_dead:
 		_update_aim(delta)
@@ -165,8 +169,18 @@ func _on_health_changed(current: int, _maximum: int) -> void:
 	_hurt_tween.tween_property(_hurt_overlay, "albedo_color:a", 0.0, 0.18)
 
 
+static func _find_mesh(node: Node) -> MeshInstance3D:
+	if node is MeshInstance3D:
+		return node
+	for child in node.get_children():
+		var found := _find_mesh(child)
+		if found:
+			return found
+	return null
+
+
 func _on_died() -> void:
-	# Placeholder death: tip over. Step 6 replaces this with a proper ragdoll collapse.
+	# Placeholder death: tip over. Replace with a Mixamo death clip when one is added.
 	var tween := create_tween()
 	tween.tween_property($Visual, "rotation:x", deg_to_rad(-80.0), 0.6) \
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)

@@ -48,16 +48,11 @@ enum Phase { READY, WINDUP, RECOVERY }
 @export var launch_lift_min: float = 6.0
 @export var launch_lift_max: float = 9.0
 
-const FIST_REST_Z := -0.5
-const FIST_EXTEND_Z := -1.9
-
 var phase: Phase = Phase.READY
 var _timer: float = 0.0
 var _use_left: bool = false
 
 @onready var hulk: Hulk = get_parent()
-@onready var fist_l: Node3D = hulk.get_node("Visual/FistL")
-@onready var fist_r: Node3D = hulk.get_node("Visual/FistR")
 
 
 func _physics_process(delta: float) -> void:
@@ -85,7 +80,9 @@ func start() -> void:
 	phase = Phase.WINDUP
 	_timer = windup
 	hulk.move_speed_multiplier = move_slow
-	_animate_fist()
+	# Alternate fists: left, right, left... reads as a flurry when you hold the button.
+	hulk.animator.play_punch(_use_left, windup)
+	_use_left = not _use_left
 
 
 func _strike() -> void:
@@ -154,13 +151,3 @@ func _in_cone(point: Vector3, max_dist: float) -> bool:
 	var point_blank := dist < hulk.body_radius + Human.BODY_RADIUS + 0.3
 	var needed_dot := 0.0 if point_blank else cos(deg_to_rad(arc_degrees * 0.5))
 	return offset.normalized().dot(forward) >= needed_dot
-
-
-func _animate_fist() -> void:
-	# Alternate fists: left, right, left... reads as a flurry when you hold the button.
-	var fist := fist_l if _use_left else fist_r
-	_use_left = not _use_left
-	var tween := create_tween()
-	tween.tween_property(fist, "position:z", FIST_EXTEND_Z, windup + 0.04) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(fist, "position:z", FIST_REST_Z, recovery - 0.04)

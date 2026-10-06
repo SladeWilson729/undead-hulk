@@ -4,36 +4,12 @@
 [ext_resource type="Script" uid="uid://dvv8aiwqcpvit" path="res://scripts/components/health.gd" id="2_health"]
 [ext_resource type="Script" path="res://scripts/player/punch_attack.gd" id="3_punch"]
 [ext_resource type="Script" path="res://scripts/player/ground_pound.gd" id="4_pound"]
+[ext_resource type="PackedScene" path="res://assets/hulk/hulk_idle.fbx" id="5_model"]
+[ext_resource type="Script" path="res://scripts/player/hulk_animator.gd" id="6_animator"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.9
 height = 3.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_skin"]
-albedo_color = Color(0.36, 0.55, 0.3, 1)
-roughness = 0.8
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
-material = SubResource("Mat_skin")
-radius = 0.9
-height = 3.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_jaw"]
-albedo_color = Color(0.45, 0.08, 0.08, 1)
-roughness = 0.7
-
-[sub_resource type="BoxMesh" id="BoxMesh_jaw"]
-material = SubResource("Mat_jaw")
-size = Vector3(0.9, 0.35, 0.4)
-
-[sub_resource type="StandardMaterial3D" id="Mat_fist"]
-albedo_color = Color(0.28, 0.44, 0.24, 1)
-roughness = 0.8
-
-[sub_resource type="SphereMesh" id="SphereMesh_fist"]
-material = SubResource("Mat_fist")
-radius = 0.45
-height = 0.9
 
 [node name="Hulk" type="CharacterBody3D" unique_id=13562351]
 collision_layer = 2
@@ -46,21 +22,8 @@ shape = SubResource("CapsuleShape3D_body")
 
 [node name="Visual" type="Node3D" parent="." unique_id=1993651232]
 
-[node name="Body" type="MeshInstance3D" parent="Visual" unique_id=1280426865]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
-mesh = SubResource("CapsuleMesh_body")
-
-[node name="Jaw" type="MeshInstance3D" parent="Visual" unique_id=548665137]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.85, -0.75)
-mesh = SubResource("BoxMesh_jaw")
-
-[node name="FistL" type="MeshInstance3D" parent="Visual" unique_id=745521099]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 1.5, -0.5)
-mesh = SubResource("SphereMesh_fist")
-
-[node name="FistR" type="MeshInstance3D" parent="Visual" unique_id=224397464]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.15, 1.5, -0.5)
-mesh = SubResource("SphereMesh_fist")
+[node name="Model" parent="Visual" instance=ExtResource("5_model")]
+transform = Transform3D(-4.71, 0, 0, 0, 4.71, 0, 0, 0, -4.71, 0, 0, 0)
 
 [node name="Health" type="Node" parent="." unique_id=130245890]
 script = ExtResource("2_health")
@@ -70,3 +33,7 @@ script = ExtResource("3_punch")
 
 [node name="GroundPound" type="Node" parent="."]
 script = ExtResource("4_pound")
+
+[node name="Animator" type="Node" parent="." node_paths=PackedStringArray("model")]
+script = ExtResource("6_animator")
+model = NodePath("../Visual/Model")

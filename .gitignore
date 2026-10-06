@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Raw asset downloads, kept locally for reference (Godot also skips this folder via .gdignore)
+assets/_raw/
+
+# Zips can exceed GitHub's 100 MB file limit
+*.zip

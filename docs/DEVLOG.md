@@ -42,6 +42,8 @@
 - [x] Step 6: Death system. DeathDirector picks ragdoll (cap 15), cheap body over the cap, or explosion (10% random). Impacts splat (15+) or stain (7+). Juggle: punch or pound an airborne body to explode it. Stains cap 60, gibs cap 160. Humans got limbs + a procedural run/slap animation that matches the ragdoll layout.
 - [x] Step 7: Wave spawner. Clear-to-advance waves: 12 + 8 per wave, alternating ends, +4% human speed per wave (capped at 1.3x), max 60 alive. 5 s breaks. HUD: wave, kills, banners, game-over summary. Debug spawner and F key removed; H only works in editor builds.
 - [ ] Step 8: Juice + art pass
+  - [x] 8a: Hulk model + animations (Mixamo zombie hulk: idle, walk, two haymakers, Jump Attack as the ground pound)
+  - [ ] 8b: Run clip, death clip, human models, toon shading, sound
 
 ## Validation log
 **Steps 1-2, 2026-10-05.** I ran an automated headless test against Godot 4.7.2 (Linux), and all 25 checks passed:
@@ -143,11 +145,36 @@ The step 3, 4, 5 and 6 suites still pass.
 
 Finding: the pound cooldown barely changes the outcome. The Hulk dies from attrition: 100 HP, no healing, and about 140 humans to get through by wave 6. Pound left at 4 s pending a sustain decision.
 
+**Step 8a (Hulk model), 2026-10-05.** I ran an automated headless test against Godot 4.8-dev7, and all 22 checks passed:
+- The 5 clips load. Idle and walk loop; the attacks don't.
+- The model stands 3.65 m tall, faces the Hulk's forward direction, and carries the hurt-flash overlay.
+- Moving plays walk, scaled to speed (capped at 2.4x); stopping returns to idle.
+- The punch clip sits at 1.18 s on the gameplay strike frame (impact pose 1.20 s), and punches alternate hands.
+- The pound snaps to the slam pose (1.65 s) on the impact frame after a 0.45 s windup, and the body stays grounded.
+- Everything returns to idle afterwards.
+
+The step 3 to 7 suites still pass (step 5's "hulk hops" check now expects him to stay grounded). I rendered a Forward+ contact sheet of idle, punch, pound airborne and pound landing.
+
+**Asset pipeline (how to add a Mixamo clip):**
+1. On Mixamo, use the same uploaded character and download as FBX Binary, **With Skin**, 30 fps (tick In Place for locomotion).
+2. Put it in `assets/hulk/` as `hulk_<name>.fbx`. In Godot's Import dock, set **Import As: Animation Library**, set **FBX > Embedded Image Handling: Discard**, then click Reimport. Copying an existing `hulk_walk.fbx.import` (with its `uid=` line deleted) does the same.
+3. Add the file to `CLIP_FILES` in `scripts/player/hulk_animator.gd`.
+
+All the Hulk clips share one skeleton, so no retargeting is needed. Root motion is stripped automatically (hips pinned in X/Z).
+
+**Measured clip timings:**
+- Zombie Punching: the haymaker lands at ~1.2 s (punch_a = right hand, punch_b = left).
+- Jump Attack: crouch to 0.45 s, airborne 0.6-1.4 s, hands hit the floor at 1.65 s, recovery to ~2.5 s, root drift ~3 m (stripped).
+- Walking: feet match the floor at 1.88 m/s, so the Hulk's 7 m/s would need 3.7x playback. Capped at 2.4x with some foot slide. **A Mutant Run clip would fix this.**
+
+Raw downloads were moved to `assets/_raw/`. That folder is skipped by Godot (`.gdignore`) and by git.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
 - **Hulk/PunchAttack:** windup, recovery, move_slow, reach, arc_degrees, max_targets, launch_speed_min/max, launch_lift_min/max
-- **Hulk/GroundPound:** cooldown, hop_speed, rise_time, slam_speed, air_control, kill_radius, shove_radius, lift_center/edge, outward_center/edge, shove_speed
+- **Hulk/Animator:** walk_natural_speed, max_walk_playback, idle_threshold, locomotion_blend, punch_impact_time, punch_end_time, punch_speed, pound_start_time, pound_impact_time, pound_end_time, pound_recover_speed
+- **Hulk/GroundPound:** cooldown, hop_speed (0: the clip does the leap), rise_time (0.45 s windup), slam_speed, air_control, kill_radius, shove_radius, lift_center/edge, outward_center/edge, shove_speed
 - **Main > Hit feel:** pound_shake, pound_hit_stop
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
 - **Deaths (DeathDirector in main.tscn):** ragdoll_cap, stain_cap, gib_cap, explode_chance, stain_speed, splat_speed, gibs_per_explosion, blood_color
