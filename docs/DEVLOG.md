@@ -276,6 +276,25 @@ Steps 4 to 13 still pass. Step 3's "8+ attackers surround the Hulk" check is sti
 
 I ran an automated headless test against Godot 4.7.2, and all 13 checks passed: all clips load, the pool and levelling work, a whiff is silent, and the punch, pound, pillar, car, explosion and yelp sounds each fire at the right moment within their limits. Steps 4 to 14 still pass.
 
+**Step 11 (car volume, eating soldiers, obstacle avoidance), 2026-10-07.**
+- **Car clang:** its level went from -12 to -20, it's limited to 1 voice at least 0.4 s apart, and the speed boost is capped at +2 dB. A bouncing car was re-triggering a 4 s crash tail.
+- **Eating:** a new EatSoldier node on the Hulk (`scripts/player/eat_soldier.gd`), on the F key ("eat" action).
+  - It grabs the closest soldier within 3.2 m in a 140-degree cone in front of him. The soldier is caught on the press via `Human.pin_to`, which counts as a kill and makes him yelp.
+  - Picking Up plays from 0.4 to 2.4 s at 2x. The soldier slides into the right fist on the grab frame (1.25 s) and dangles 1.5 m below it.
+  - eating plays from 0 to 1.3 s at 1.5x. On the chomp frame (0.45 s), gibs burst from his mouth (`DeathDirector.explode_at`, so the splat sound and shake come with it) and he heals +5, capped at max HP.
+  - The whole move takes about 1.9 s, at 0.1x movement, with punch, pound and car locked. The 3 s cooldown starts after swallowing.
+  - The HUD shows EAT READY / NOM / countdown. `HulkVoice.eat_lines` plays on the grab; it's empty until there's a line for it. Dying mid-meal drops the soldier with no heal.
+- **Obstacle avoidance** (`Human._avoid`): every 0.1 s (staggered) a chasing soldier sphere-casts 2.5 m along his line to the Hulk. Clear: he runs straight. Blocked: he casts 16 directions and takes the clear one closest to the goal, with a bias to keep his chosen side.
+  - The probe is a 0.35 m sphere at 0.45 m height, on the world layer only, so it catches walls, pillars, stumps and parked cars but ignores the Hulk and the crowd.
+  - I didn't use a navmesh, because the obstacles move and break.
+  - Before and after, 6 soldiers each: pillar 3 to 6 of 6, parked car 0 to 6 of 6, stump 6 to 6 of 6.
+  - Physics cost with 60 soldiers: 31.0 ms with avoidance against 31.6 ms without, on the lab machine, so no measurable difference.
+
+I ran automated headless tests against Godot 4.7.2: step 16 (eating) passed all 25 checks and step 17 (pathing) all 3 cases.
+- Steps 4 to 15 still pass. Step 8 now expects 13 clips.
+- Step 5 had started failing about a third of the time: its soldiers stand next to the parked car, and launched bodies bounced off it. It now removes the props, and passed 8 of 8.
+- Step 3's "8+ attackers" check is unchanged at 5-8 (the swarm-tuning item).
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -289,6 +308,9 @@ I ran an automated headless test against Godot 4.7.2, and all 13 checks passed: 
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
 - **Hulk/Voice (HulkVoice):** the line lists per event, punch_chance, pitch_variance; bus volumes in the Audio tab
 - **Main > Audio:** music_death_duck_db
+- **Hulk/EatSoldier:** eat_range, arc_degrees, hang_drop, heal_amount, cooldown, move_while_eating
+- **Hulk/Animator > Eat clips:** pickup_start_time, pickup_grab_time, pickup_end_time, pickup_speed, eat_start_time, eat_chomp_time, eat_end_time, eat_speed
+- **Human > Obstacle avoidance:** avoid_lookahead, avoid_interval, avoid_side_bias
 - **Sfx (main.tscn):** voices, unit_size, panning; per-group target / max_voices / min_interval / chance / pitch in the `groups` table in `scripts/audio/sfx.gd`
 - **ThrowableCar > Sound:** impact_sound_speed
 - **ThrowableCar (Level/Car):** throw_speed, throw_lift, throw_spin, pin_speed, kill_speed, max_pinned, crush_speed, crush_drop, respawn_height; CrushZone shape size

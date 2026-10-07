@@ -45,6 +45,7 @@ func _ready() -> void:
 	hulk.punch.punched.connect(_on_punched)
 	hulk.pound.pounded.connect(_on_pounded)
 	hud.bind_pound(hulk.pound)
+	hud.bind_eat(hulk.eat)
 	deaths.exploded.connect(func(_pos: Vector3) -> void: camera_rig.add_shake(explosion_shake))
 	hud.bind_spawner(spawner)
 	# The Hulk goes down: the music sinks with him.
@@ -55,9 +56,9 @@ func _ready() -> void:
 	for car in get_tree().get_nodes_in_group("throwables"):
 		car.thrown.connect(func() -> void: camera_rig.add_shake(0.2))
 		car.crushed.connect(_on_car_crushed)
-		# Clang scales with speed: a 22 m/s slam is ~4 dB louder than a 10 m/s bump.
+		# Clang scales with speed: a 22 m/s slam is ~2 dB louder than a 14 m/s hit, a slow bump ~6 dB quieter.
 		car.impacted.connect(func(pos: Vector3, speed: float) -> void:
-			sfx.play("car_impact", pos, clampf((speed - 14.0) * 0.5, -6.0, 4.0)))
+			sfx.play("car_impact", pos, clampf((speed - 14.0) * 0.5, -6.0, 2.0)))
 	# Gore and screams.
 	deaths.exploded.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
 	deaths.splatted.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))

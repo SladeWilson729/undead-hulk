@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://ujfutrrt3n6c"
+path="res://.godot/imported/a_brick_wall_explodi_#1-1791320635827.mp3-8d1a5c770dda58d30d9d6d9bb7d17e1b.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/a_brick_wall_explodi_#1-1791320635827.mp3"
+dest_files=["res://.godot/imported/a_brick_wall_explodi_#1-1791320635827.mp3-8d1a5c770dda58d30d9d6d9bb7d17e1b.mp3str"]
 
 [params]
 

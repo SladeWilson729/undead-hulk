@@ -40,7 +40,8 @@ var groups := {
 	},
 	"car_impact": {
 		"files": ["a_heavy_metal_box_hi_#1-1791320606405.mp3", "a_heavy_metal_box_hi_#4-1791320612238.mp3"],
-		"rms": [-13.8, -10.7], "target": -12.0, "max_voices": 2, "min_interval": 0.15, "chance": 1.0, "pitch": 0.08,
+		# Turned down 8 dB after playtesting: a 4 s crash tail re-triggered by every bounce was too much.
+		"rms": [-13.8, -10.7], "target": -20.0, "max_voices": 1, "min_interval": 0.4, "chance": 1.0, "pitch": 0.08,
 	},
 	"splat": {
 		"files": ["a_overripe_orange_hi_#1-1791320405861.mp3", "a_rotten_melon_impac_#4-1791320514594.mp3", "Ripe_watermelon_spla_#4-1791320742459.mp3"],

@@ -29,6 +29,7 @@ extends CharacterBody3D
 @onready var pound: GroundPound = $GroundPound
 @onready var animator: HulkAnimator = $Animator
 @onready var carry: CarryThrow = $CarryThrow
+@onready var eat: EatSoldier = $EatSoldier
 ## The skinned mesh inside the imported model. Found by search so swapping the model file
 ## (new Mixamo export, different node names) doesn't break the hurt flash.
 @onready var body_mesh: MeshInstance3D = _find_mesh($Visual/Model)
@@ -130,7 +131,7 @@ func face_point(point: Vector3, delta: float) -> void:
 ## True when no attack is in progress and we're alive. Attacks check this before starting,
 ## so a punch can't fire mid-pound and vice versa.
 func can_attack() -> bool:
-	return not health.is_dead and punch.phase == PunchAttack.Phase.READY and not pound.is_busy() and not carry.is_busy()
+	return not health.is_dead and punch.phase == PunchAttack.Phase.READY and not pound.is_busy() and not carry.is_busy() and not eat.is_busy()
 
 
 ## The Hulk does NOT collide with humans (collision mask = world only), so the swarm can never

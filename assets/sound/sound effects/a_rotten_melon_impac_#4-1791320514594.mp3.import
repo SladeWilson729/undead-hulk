@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://dtfxq7752ili0"
+path="res://.godot/imported/a_rotten_melon_impac_#4-1791320514594.mp3-6f99e2d94a6e02b37e20fcd4e7906e9a.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/a_rotten_melon_impac_#4-1791320514594.mp3"
+dest_files=["res://.godot/imported/a_rotten_melon_impac_#4-1791320514594.mp3-6f99e2d94a6e02b37e20fcd4e7906e9a.mp3str"]
 
 [params]
 

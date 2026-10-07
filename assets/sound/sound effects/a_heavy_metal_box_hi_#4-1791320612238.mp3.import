@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://b6altmyhs5cl4"
+path="res://.godot/imported/a_heavy_metal_box_hi_#4-1791320612238.mp3-7c31e062dccdb4ef0fd2bd713e0488dc.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/a_heavy_metal_box_hi_#4-1791320612238.mp3"
+dest_files=["res://.godot/imported/a_heavy_metal_box_hi_#4-1791320612238.mp3-7c31e062dccdb4ef0fd2bd713e0488dc.mp3str"]
 
 [params]
 

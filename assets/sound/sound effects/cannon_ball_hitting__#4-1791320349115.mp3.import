@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://b73esr2c56248"
+path="res://.godot/imported/cannon_ball_hitting__#4-1791320349115.mp3-ffcb5ec2aa0fadd283515a5311e16ff0.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/cannon_ball_hitting__#4-1791320349115.mp3"
+dest_files=["res://.godot/imported/cannon_ball_hitting__#4-1791320349115.mp3-ffcb5ec2aa0fadd283515a5311e16ff0.mp3str"]
 
 [params]
 

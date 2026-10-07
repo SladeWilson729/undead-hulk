@@ -21,7 +21,7 @@ script = ExtResource("1_hud")
 
 [node name="Margin" type="MarginContainer" parent="." unique_id=912602926]
 offset_right = 420.0
-offset_bottom = 120.0
+offset_bottom = 150.0
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 24
 
@@ -53,6 +53,14 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 22
 text = "POUND  READY"
+
+[node name="EatLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 22
+text = "EAT  READY"
 
 [node name="KillLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true

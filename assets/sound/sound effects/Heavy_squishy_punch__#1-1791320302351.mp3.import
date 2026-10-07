@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://dmvmiek3atiue"
+path="res://.godot/imported/Heavy_squishy_punch__#1-1791320302351.mp3-d85704ff4a8f3679c2bbea6f266a754f.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/Heavy_squishy_punch__#1-1791320302351.mp3"
+dest_files=["res://.godot/imported/Heavy_squishy_punch__#1-1791320302351.mp3-d85704ff4a8f3679c2bbea6f266a754f.mp3str"]
 
 [params]
 

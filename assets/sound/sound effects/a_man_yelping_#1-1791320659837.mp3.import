@@ -2,10 +2,13 @@
 
 importer="mp3"
 type="AudioStreamMP3"
+uid="uid://diffqif1gpaqf"
+path="res://.godot/imported/a_man_yelping_#1-1791320659837.mp3-e488af37eccdcbc9af565ca94c2c7e11.mp3str"
 
 [deps]
 
 source_file="res://assets/sound/sound effects/a_man_yelping_#1-1791320659837.mp3"
+dest_files=["res://.godot/imported/a_man_yelping_#1-1791320659837.mp3-e488af37eccdcbc9af565ca94c2c7e11.mp3str"]
 
 [params]
 

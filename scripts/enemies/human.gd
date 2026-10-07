@@ -22,6 +22,16 @@ enum State { CHASE, ATTACK, IDLE }
 ## How hard they curve. 0 = straight line, 1 = 45 degrees off.
 @export var flank_strength: float = 0.8
 
+@export_group("Obstacle avoidance")
+## How far ahead (m) a soldier checks that his straight line to the Hulk is clear.
+@export var avoid_lookahead: float = 2.5
+## Seconds between checks (staggered per soldier). One sphere cast per check when the way is
+## clear; 16 when blocked.
+@export var avoid_interval: float = 0.1
+## Preference for keeping the side (left/right) he already chose, so he doesn't dither
+## in front of the obstacle.
+@export var avoid_side_bias: float = 0.4
+
 @export_group("Attack")
 ## Damage per hit. Design rule: 1.
 @export var damage: int = 1
@@ -32,6 +42,12 @@ enum State { CHASE, ATTACK, IDLE }
 @export var attack_reach: float = 0.35
 
 const BODY_RADIUS := 0.4
+## Obstacle probe: a sphere slightly thinner than the body (so a soldier already touching a
+## pillar isn't "inside" it), centred low enough to catch a 0.44 m pillar stump while its
+## bottom still clears the floor.
+const PROBE_RADIUS := 0.35
+const PROBE_HEIGHT := 0.45
+const AVOID_DIRECTIONS := 16
 const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 
 @export_group("Animation")
@@ -63,6 +79,11 @@ var model: Node3D
 var gib_material: Material
 
 var _ap: AnimationPlayer
+var _avoid_timer: float = 0.0
+## Detour direction while the straight line is blocked; ZERO = path clear, run straight.
+var _steer: Vector3 = Vector3.ZERO
+var _steer_side: float = 0.0
+var _probe: PhysicsShapeQueryParameters3D
 var _run_speed: float = 3.0
 
 @onready var visual: Node3D = $Visual
@@ -74,6 +95,12 @@ func _ready() -> void:
 	# Stagger the first swing so a group that arrives together doesn't hit in perfect sync.
 	_cooldown = randf_range(0.0, 0.4)
 	_flank_side = 1.0 if randf() < 0.5 else -1.0
+	_avoid_timer = randf() * avoid_interval  # Stagger: not every soldier probes on the same tick.
+	var sphere := SphereShape3D.new()
+	sphere.radius = PROBE_RADIUS
+	_probe = PhysicsShapeQueryParameters3D.new()
+	_probe.shape = sphere
+	_probe.collision_mask = 1  # World only: walls, rails, pillars, stumps, parked cars. Not the Hulk or the crowd.
 	_build_model()
 	if target == null:
 		target = get_tree().get_first_node_in_group("player") as Hulk
@@ -111,6 +138,8 @@ func _physics_process(delta: float) -> void:
 					# Curve around the Hulk to find an open slot instead of shoving the guy in front.
 					var tangent := Vector3(-dir.z, 0.0, dir.x) * _flank_side
 					dir = (dir + tangent * flank_strength).normalized()
+				if state == State.CHASE:
+					dir = _avoid(dir, dist - contact_dist, delta)
 				desired = dir * _speed
 		State.IDLE:
 			desired = Vector3.ZERO
@@ -166,6 +195,52 @@ func _animate() -> void:
 	var speed := Vector2(velocity.x, velocity.z).length()
 	# Nearly stopped (e.g. the Hulk is dead): freeze mid-stride rather than moonwalk.
 	_ap.speed_scale = 0.0 if speed < 0.3 else clampf(speed / _run_speed, 0.4, max_run_playback)
+
+
+## Steering around obstacles. Every avoid_interval: is the straight line clear for the next
+## avoid_lookahead meters? Yes: run straight. No: try 16 directions around the circle and take
+## the one that's clear and points most toward the Hulk, preferring the side already chosen.
+## No navmesh: obstacles here move and break (thrown cars, smashed pillars), so a baked
+## mesh would be stale; probing the world as it is right now always matches the level.
+func _avoid(dir: Vector3, room: float, delta: float) -> Vector3:
+	_avoid_timer -= delta
+	if _avoid_timer <= 0.0:
+		_avoid_timer = avoid_interval
+		var reach := clampf(room, 0.5, avoid_lookahead)
+		if _free_fraction(dir, reach) >= 0.999:
+			_steer = Vector3.ZERO
+			_steer_side = 0.0
+		else:
+			_steer = _detour(dir, reach)
+	return _steer if _steer != Vector3.ZERO else dir
+
+
+func _detour(dir: Vector3, reach: float) -> Vector3:
+	var best := dir
+	var best_score := -INF
+	var best_side := 0.0
+	for i in range(1, AVOID_DIRECTIONS):
+		var d := dir.rotated(Vector3.UP, TAU * i / AVOID_DIRECTIONS)
+		var free := _free_fraction(d, reach)
+		# Fully clear directions win; partly clear ones only as a last resort.
+		var score := d.dot(dir) + (0.0 if free >= 0.999 else -2.0 + free)
+		var side := signf(dir.cross(d).y)
+		if _steer_side != 0.0 and side == _steer_side:
+			score += avoid_side_bias
+		if score > best_score:
+			best_score = score
+			best = d
+			best_side = side
+	_steer_side = best_side
+	return best
+
+
+## Fraction (0-1) of `reach` meters the body can travel along `dir` before touching the world.
+func _free_fraction(dir: Vector3, reach: float) -> float:
+	_probe.transform = Transform3D(Basis.IDENTITY, global_position + Vector3.UP * PROBE_HEIGHT)
+	_probe.motion = dir * reach
+	var result := get_world_3d().direct_space_state.cast_motion(_probe)
+	return result[0]
 
 
 func _try_attack() -> void:

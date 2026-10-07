@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/player/hulk_animator.gd" id="6_animator"]
 [ext_resource type="Script" path="res://scripts/player/carry_throw.gd" id="7_carry"]
 [ext_resource type="Script" path="res://scripts/audio/hulk_voice.gd" id="8_voice"]
+[ext_resource type="Script" path="res://scripts/player/eat_soldier.gd" id="9_eat"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.9
@@ -42,6 +43,9 @@ model = NodePath("../Visual/Model")
 
 [node name="CarryThrow" type="Node" parent="."]
 script = ExtResource("7_carry")
+
+[node name="EatSoldier" type="Node" parent="."]
+script = ExtResource("9_eat")
 
 [node name="Voice" type="AudioStreamPlayer" parent="."]
 script = ExtResource("8_voice")

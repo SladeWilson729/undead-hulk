@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var hp_bar: ProgressBar = %HPBar
 @onready var game_over: Label = %GameOverLabel
 @onready var pound_label: Label = %PoundLabel
+@onready var eat_label: Label = %EatLabel
 @onready var wave_label: Label = %WaveLabel
 @onready var kill_label: Label = %KillLabel
 @onready var banner: Label = %Banner
@@ -17,6 +18,7 @@ extends CanvasLayer
 @export var game_over_delay: float = 1.2
 
 var _pound: GroundPound
+var _eat: EatSoldier
 var _spawner: WaveSpawner
 var _banner_tween: Tween
 
@@ -32,6 +34,10 @@ func bind_pound(pound: GroundPound) -> void:
 	_pound = pound
 
 
+func bind_eat(eat: EatSoldier) -> void:
+	_eat = eat
+
+
 func bind_spawner(spawner: WaveSpawner) -> void:
 	_spawner = spawner
 	spawner.wave_started.connect(_on_wave_started)
@@ -43,6 +49,7 @@ func bind_spawner(spawner: WaveSpawner) -> void:
 
 func _process(_delta: float) -> void:
 	_update_break_banner()
+	_update_eat_label()
 	if _pound == null:
 		return
 	if _pound.phase == GroundPound.Phase.COOLDOWN:
@@ -51,6 +58,20 @@ func _process(_delta: float) -> void:
 	else:
 		pound_label.text = "POUND  READY"
 		pound_label.modulate = Color(1.0, 0.85, 0.3)
+
+
+func _update_eat_label() -> void:
+	if _eat == null:
+		return
+	if _eat.phase == EatSoldier.Phase.COOLDOWN:
+		eat_label.text = "EAT  %.1f" % _eat.cooldown_remaining
+		eat_label.modulate = Color(0.6, 0.6, 0.6)
+	elif _eat.is_busy():
+		eat_label.text = "EAT  NOM"
+		eat_label.modulate = Color(0.85, 0.25, 0.2)
+	else:
+		eat_label.text = "EAT  READY"
+		eat_label.modulate = Color(0.5, 1.0, 0.45)
 
 
 func _on_health_changed(current: int, maximum: int) -> void:

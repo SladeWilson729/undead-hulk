@@ -39,6 +39,8 @@ const DEFAULT_LEAD_TRIM := 0.08
 ]
 ## Nothing recorded yet for the throw; add lines here and they play on the throw click.
 @export var throw_lines: Array[AudioStream] = []
+## Nothing recorded yet for eating; add lines here and they play when he grabs a soldier.
+@export var eat_lines: Array[AudioStream] = []
 @export var victory_lines: Array[AudioStream] = [
 	load(SFX + "victory-1.mp3"), load(SFX + "victory-2.mp3"), load(SFX + "victory-3.mp3"),
 ]
@@ -62,6 +64,7 @@ func _ready() -> void:
 	hulk.get_node("GroundPound").leaped.connect(func() -> void: say(pound_lines, Priority.ACTION))
 	hulk.get_node("CarryThrow").lifted.connect(func() -> void: say(lift_lines, Priority.ACTION))
 	hulk.get_node("CarryThrow").throw_started.connect(func() -> void: say(throw_lines, Priority.ACTION))
+	hulk.get_node("EatSoldier").grabbed.connect(func() -> void: say(eat_lines, Priority.ACTION))
 	hulk.get_node("Animator").victory_started.connect(func() -> void: say(victory_lines, Priority.VICTORY))
 	# Dead men tell no jokes.
 	hulk.get_node("Health").died.connect(func() -> void:

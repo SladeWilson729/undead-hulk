@@ -4,7 +4,7 @@ extends Node
 ## own timers (PunchAttack, GroundPound) and tell this node what to show. This node lines the
 ## clips up so the visual impact lands on the same frame as the gameplay impact.
 ##
-## All eight FBX files come from Mixamo with the same character and skeleton, so their tracks
+## All ten FBX files come from Mixamo with the same character and skeleton, so their tracks
 ## ("Skeleton3D:mixamorig_*") plug straight into the model's AnimationPlayer. No retargeting.
 ##
 ## Clip timings below were measured from the files (hand reach and hip height over time).
@@ -22,6 +22,8 @@ const CLIP_FILES := {
 	"victory": "res://assets/hulk/victory.fbx",
 	"lift": "res://assets/hulk/Overhead Squat.fbx",
 	"throw": "res://assets/hulk/Throw In.fbx",
+	"pickup": "res://assets/hulk/Picking Up.fbx",
+	"eat": "res://assets/hulk/eating.fbx",
 }
 ## Bones driven by the carry pose (arms, spine, head) when we build carry_idle / carry_walk.
 ## Matched by substring: "Arm" also catches ForeArm, "Hand" catches every finger bone.
@@ -83,6 +85,20 @@ const HIPS_TRACK := ^"Skeleton3D:mixamorig_Hips"
 @export var throw_release_time: float = 1.5
 @export var throw_end_time: float = 2.2
 @export var throw_speed: float = 2.0
+
+@export_group("Eat clips")
+## Picking Up: bends from ~0.4 s, right hand on the floor ~1.6 m ahead at ~1.25 s (the grab),
+## back up with the hand at chest height by ~2.4 s. Right hand only.
+@export var pickup_start_time: float = 0.4
+@export var pickup_grab_time: float = 1.25
+@export var pickup_end_time: float = 2.4
+@export var pickup_speed: float = 2.0
+## eating: opens with the right hand at his mouth, closest at ~0.45 s (the chomp), then
+## lowers to his chest by ~1.3 s.
+@export var eat_start_time: float = 0.0
+@export var eat_chomp_time: float = 0.45
+@export var eat_end_time: float = 1.3
+@export var eat_speed: float = 1.5
 
 var _ap: AnimationPlayer
 var _in_action: bool = false
@@ -163,6 +179,27 @@ func play_throw() -> float:
 	_carrying = false
 	_start_action("hulk/throw", throw_start_time, throw_speed, throw_end_time, 0.08)
 	return (throw_release_time - throw_start_time) / throw_speed
+
+
+## Bend down for a soldier. Returns real seconds until the hand reaches the floor (the grab).
+func play_pickup() -> float:
+	_start_action("hulk/pickup", pickup_start_time, pickup_speed, pickup_end_time, 0.1)
+	return (pickup_grab_time - pickup_start_time) / pickup_speed
+
+
+## Real seconds the pickup takes from start to standing back up.
+func pickup_duration() -> float:
+	return (pickup_end_time - pickup_start_time) / pickup_speed
+
+
+## Hand to mouth. Returns real seconds until the chomp.
+func play_eat() -> float:
+	_start_action("hulk/eat", eat_start_time, eat_speed, eat_end_time, 0.15)
+	return (eat_chomp_time - eat_start_time) / eat_speed
+
+
+func eat_duration() -> float:
+	return (eat_end_time - eat_start_time) / eat_speed
 
 
 func is_carrying() -> bool:
