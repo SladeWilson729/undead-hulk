@@ -43,6 +43,16 @@ var groups := {
 		# Turned down 8 dB after playtesting: a 4 s crash tail re-triggered by every bounce was too much.
 		"rms": [-13.8, -10.7], "target": -20.0, "max_voices": 1, "min_interval": 0.4, "chance": 1.0, "pitch": 0.08,
 	},
+	# Rocket launch thump and explosion. Stand-ins built from the cannonball clip (pitched up
+	# for the launch, down for the boom) until there are dedicated rocket sounds.
+	"rocket_launch": {
+		"files": ["cannon_ball_hitting__#4-1791320349115.mp3"],
+		"rms": [-22.9], "target": -17.0, "max_voices": 2, "min_interval": 0.1, "chance": 1.0, "pitch": 0.05, "pitch_base": 1.6,
+	},
+	"rocket_boom": {
+		"files": ["cannon_ball_hitting__#4-1791320349115.mp3"],
+		"rms": [-22.9], "target": -8.0, "max_voices": 3, "min_interval": 0.05, "chance": 1.0, "pitch": 0.05, "pitch_base": 0.7,
+	},
 	"splat": {
 		"files": ["a_overripe_orange_hi_#1-1791320405861.mp3", "a_rotten_melon_impac_#4-1791320514594.mp3", "Ripe_watermelon_spla_#4-1791320742459.mp3"],
 		"rms": [-22.6, -30.5, -25.6], "target": -15.0, "max_voices": 4, "min_interval": 0.04, "chance": 1.0, "pitch": 0.12,
@@ -101,7 +111,7 @@ func play(group: String, at: Vector3, volume_offset: float = 0.0) -> bool:
 	var i := _pick(group)
 	player.stream = _streams[group][i]
 	player.volume_db = _gains[group][i] + volume_offset
-	player.pitch_scale = 1.0 + randf_range(-g.pitch, g.pitch)
+	player.pitch_scale = g.get("pitch_base", 1.0) + randf_range(-g.pitch, g.pitch)
 	player.global_position = at
 	player.play()
 	_owner_group[player] = group

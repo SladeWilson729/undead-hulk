@@ -13,6 +13,8 @@ signal wave_cleared(wave: int)
 signal kills_changed(total: int)
 ## One soldier died, and where. For effects that care about position (death yelps).
 signal human_killed(position: Vector3)
+## A special enemy (rocket soldier) entered the field. Main hooks up its sounds and shake.
+signal special_spawned(human: Human)
 
 enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 
@@ -43,6 +45,13 @@ enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 ## A big wave just keeps queuing until the Hulk thins the crowd.
 @export var max_alive: int = 60
 
+@export_group("Rocket soldiers")
+@export var rocket_soldier_scene: PackedScene = preload("res://scenes/enemies/rocket_soldier.tscn")
+@export var rocket_soldiers_per_wave: int = 1
+## He walks on once this fraction of the wave's regular soldiers has spawned, so he arrives
+## behind a screen of runners instead of alone.
+@export_range(0.0, 1.0) var rocket_spawn_at: float = 0.25
+
 @export_group("Difficulty")
 ## Run speed bonus per wave (0.04 = +4% per wave).
 @export var speed_growth: float = 0.04
@@ -62,6 +71,8 @@ var alive: int = 0
 var _to_spawn: int = 0
 var _timer: float = 0.0
 var _next_side: float = -1.0
+var _rockets_left: int = 0
+var _spawned_this_wave: int = 0
 
 
 func _ready() -> void:
@@ -86,8 +97,13 @@ func _physics_process(delta: float) -> void:
 					break
 				spawn_one()
 				_to_spawn -= 1
+				_spawned_this_wave += 1
 				_timer += current_interval()
+				if _rockets_left > 0 and _spawned_this_wave >= ceili(wave_size(wave) * rocket_spawn_at):
+					spawn_rocket_soldier()
 			if _to_spawn == 0:
+				while _rockets_left > 0:
+					spawn_rocket_soldier()
 				state = State.FIGHTING
 				_check_cleared()
 
@@ -105,8 +121,8 @@ func speed_multiplier(n: int) -> float:
 
 
 ## Spawns one human at the next end of the corridor. Public for tests and debug tools.
-func spawn_one() -> Human:
-	var human: Human = human_scene.instantiate()
+func spawn_one(scene: PackedScene = null) -> Human:
+	var human: Human = (scene if scene else human_scene).instantiate()
 	human.position = Vector3(
 		_next_side * SPAWN_X + randf_range(-2.0, 2.0),
 		0.0,
@@ -122,8 +138,18 @@ func spawn_one() -> Human:
 	return human
 
 
+## One rocket soldier, at the next end of the corridor. Counts toward the wave like anyone.
+func spawn_rocket_soldier() -> Human:
+	_rockets_left = maxi(_rockets_left - 1, 0)
+	var soldier := spawn_one(rocket_soldier_scene)
+	special_spawned.emit(soldier)
+	return soldier
+
+
 func _start_wave() -> void:
 	wave += 1
+	_rockets_left = rocket_soldiers_per_wave
+	_spawned_this_wave = 0
 	_to_spawn = wave_size(wave)
 	_timer = 0.0
 	state = State.SPAWNING

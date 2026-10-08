@@ -295,6 +295,61 @@ I ran automated headless tests against Godot 4.7.2: step 16 (eating) passed all 
 - Step 5 had started failing about a third of the time: its soldiers stand next to the parked car, and launched bodies bounced off it. It now removes the props, and passed 8 of 8.
 - Step 3's "8+ attackers" check is unchanged at 5-8 (the swarm-tuning item).
 
+**Step 12 (rocket soldier), 2026-10-08.** One rocket soldier joins each wave (`WaveSpawner.rocket_soldiers_per_wave`). He walks on once 25% of the wave has spawned (`rocket_spawn_at`), so he arrives behind a screen of runners. He counts toward the wave, so the wave won't clear until he's dead.
+
+**Model:** Will's Tripo rocket soldier, `assets/base_models/tripo_convert_0ef4d69c-…fbx`.
+- It's Mixamo-rigged (65 bones, same names as the soldiers), imported at `root_scale` 2.03, so he's 1.72 m tall.
+- The launcher is `assets/props/rocket_launcher.glb`. Its bore is at +Z, the pistol grip at z 0.03, the front grip at z 0.32, and the tube centreline at y 0.258. It's used at 1.0 scale, a 1 m tube.
+
+**Run:** soldier B's Mixamo run, retargeted by `AnimRetarget`.
+- Why retarget: the two rigs share bone names but not rest poses (hips 90 degrees apart, thighs 177, forearms 112), so copied rotations would twist him.
+- How: per frame, each bone's world-space turn away from its rest is applied to the target's rest. The hips height is the clip's own height times the leg-length ratio. The clip is then shifted so the lowest toe of the stride sits exactly on the floor.
+- Result: the planted foot is at 0.00-0.02 m and the hips track soldier B's within 3 cm. It's built once (10 ms) and cached.
+
+**Kneel and fire:** `RocketPose`, a GDScript SkeletonModifier3D, followed by two TwoBoneIK3D.
+- The pose modifier does the kneel (hips drop 0.37 m plus a 10-degree lean), a 30-degree shooter's torso twist with the head turned back, and the recoil (launcher kicks back 12 cm and up 8 degrees, torso rocks back 6 degrees, over 0.45 s). It also places the launcher at the right shoulder, riding Spine2.
+- ArmsIK keeps both hands on the grips at all times. LegsIK, weighted by crouch, gives the kneel stance: front foot flat, back knee on the floor.
+- The twist is what makes the grips reachable. His arms reach 0.57 m, and without the twist the front grip is 0.74 m from his left shoulder; with it, about 0.53 m.
+- Note: modifier results only exist during the skeleton update, so measure the final pose inside `Skeleton3D.skeleton_updated`.
+
+**AI** (RocketSoldier extends Human, so death, ragdoll, eating, car pins and obstacle avoidance are all inherited):
+- APPROACH to `preferred_range` (13 m) with a clear line of sight, then KNEEL (0.35 s).
+- AIM (0.9 s, with a pulsing red laser along the exact rocket path as the warning), then FIRE, then RELOAD (2.2 s) and repeat.
+- If the Hulk comes inside `min_range` (6 m) he gets up and RETREATs.
+- Line of sight is a world-only ray (walls, pillars, parked cars).
+- On death or pin, the rig shuts off for the ragdoll and the launcher drops as a loose RubbleChunk prop.
+
+**Rocket** (`scripts/weapons/rocket.gd`):
+- 18 m/s, built in code (olive body, nose cone, fins, flickering exhaust and light, smoke trail). It casts a ray along each step's movement against world, Hulk and soldiers, excluding the shooter.
+- Blast radius 3.5 m. The Hulk takes 14 at the centre down to 4 at the edge, and invulnerability (the pound) still applies.
+- Soldiers in the blast die and are thrown outward, so friendly fire is on. Airborne bodies explode, pillars smash, and a parked car gets shoved.
+
+**Effects** (all code-made, sharing the `VfxMat` helpers):
+- `Explosion`: three-layer fireball, light flash, ground shockwave ring, sparks, rising smoke, a scorch decal that fades after 5 s, and a "KA-BOOM!" / "BLAM!" / "KRAKOOM!" comic.
+- `MuzzleFlash`: flame cone and flash ball at the muzzle, plus a backblast cone and smoke out of the rear of the tube.
+- One-shot particle bursts must be positioned before `emitting = true`, or the first burst appears at the world origin. `VfxMat.burst` now returns them not emitting.
+
+**Sound and feel:**
+- New sfx groups `rocket_launch` (the cannonball clip pitched up 1.6x) and `rocket_boom` (pitched down to 0.7x) are stand-ins until there are real rocket sounds.
+- Main adds shake on launch and on the explosion, plus extra shake and a hit stop when the Hulk is caught.
+
+**Tests:** step 18 passed all 23 checks, three runs in a row. It covers:
+- one per wave, counted in the wave
+- 1.72 m tall, carrying the launcher, running the retargeted clip
+- hands on the grips while running and back on them after each kick (6-8 mm; up to ~5 cm for a frame during the 0.1 s kick)
+- kneel, then laser, then a shot from range; recoil; barrel fire at both ends
+- a hit of 4-14 with the explosion; a second shot after reload
+- friendly fire; retreating from 3 m; no shot through a pillar (he repositions and fires); death dropping the launcher
+
+He can also be eaten, which drops the launcher and counts the kill. A 45 s soak of live waves raised no script errors: 12 rockets fired, 12 exploded.
+
+Steps 4-17 pass, with these test fixes:
+- Step 7 turns rocket soldiers off (it checks wave counts).
+- Step 15 expects 15 clips (two reused for the rocket sounds).
+- Step 17's stump case removes the parked car, which overlapped the Hulk's spot and wedged him against the stump; 5 of 5 after.
+
+**Balance note:** a rocket soldier left alone deals 14 about every 3.1 s. A Hulk that ignores him dies in about 20 s; in the soak, a stationary Hulk lost 179 HP in 40 s. That's intended (hunt him first), but it's the first knob to turn: `Rocket.max_damage` / `min_damage`, `RocketSoldier.reload_time` / `aim_time`.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -308,6 +363,11 @@ I ran automated headless tests against Godot 4.7.2: step 16 (eating) passed all 
 - **Spawner (WaveSpawner in main.tscn):** first_wave_size, size_growth, first_break, break_time, spawn_interval, min_spawn_interval, interval_shrink_per_wave, max_alive, speed_growth, max_speed_multiplier
 - **Hulk/Voice (HulkVoice):** the line lists per event, punch_chance, pitch_variance; bus volumes in the Audio tab
 - **Main > Audio:** music_death_duck_db
+- **RocketSoldier (rocket_soldier.tscn):** max_range, preferred_range, min_range, kneel_time, aim_time, reload_time, show_aim_laser
+- **Rocket (scripts/weapons/rocket.gd):** speed, max_life, blast_radius, max_damage, min_damage, blast_launch
+- **RocketPose (vars in rocket_pose.gd):** launcher_scale, launcher_offset, torso_twist, kneel_drop, kneel_lean, recoil_time, recoil_back, recoil_pitch, recoil_lean
+- **Spawner > Rocket soldiers:** rocket_soldier_scene, rocket_soldiers_per_wave, rocket_spawn_at
+- **Main > Rockets:** rocket_launch_shake, rocket_boom_shake, rocket_hit_shake, rocket_hit_stop
 - **Hulk/EatSoldier:** eat_range, arc_degrees, hang_drop, heal_amount, cooldown, move_while_eating
 - **Hulk/Animator > Eat clips:** pickup_start_time, pickup_grab_time, pickup_end_time, pickup_speed, eat_start_time, eat_chomp_time, eat_end_time, eat_speed
 - **Human > Obstacle avoidance:** avoid_lookahead, avoid_interval, avoid_side_bias

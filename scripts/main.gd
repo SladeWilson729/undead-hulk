@@ -2,6 +2,13 @@ extends Node3D
 ## Level root. Owns the wiring between systems so they don't need to know about each other:
 ## Hulk <-> Camera, Hulk.Health -> HUD, Spawner -> HUD, hit feel (shake + hit stop).
 
+@export_group("Rockets")
+@export var rocket_launch_shake: float = 0.08
+@export var rocket_boom_shake: float = 0.45
+## Extra shake and a hit stop when the blast catches the Hulk.
+@export var rocket_hit_shake: float = 0.35
+@export var rocket_hit_stop: float = 0.06
+
 @export_group("Audio")
 ## Music volume (dB, on top of the Music bus) after the Hulk dies.
 @export var music_death_duck_db: float = -14.0
@@ -62,6 +69,7 @@ func _ready() -> void:
 	# Gore and screams.
 	deaths.exploded.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
 	deaths.splatted.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
+	spawner.special_spawned.connect(_on_special_spawned)
 	spawner.human_killed.connect(func(pos: Vector3) -> void: sfx.play("yelp", pos + Vector3.UP * 1.5))
 	# Victory roar after each cleared wave; the next wave cuts it if it's still going.
 	spawner.wave_cleared.connect(func(_wave: int) -> void: hulk.animator.queue_victory())
@@ -91,6 +99,22 @@ func _on_car_crushed(_position: Vector3, count: int) -> void:
 	camera_rig.add_shake(car_crush_shake + car_crush_shake_per_kill * count)
 	if count > 0:
 		hit_stop(car_crush_hit_stop)
+
+
+func _on_special_spawned(human: Human) -> void:
+	var rs := human as RocketSoldier
+	if rs:
+		rs.fired.connect(_on_rocket_fired)
+
+
+func _on_rocket_fired(rocket: Rocket) -> void:
+	sfx.play("rocket_launch", rocket.global_position)
+	camera_rig.add_shake(rocket_launch_shake)
+	rocket.exploded.connect(func(at: Vector3, hulk_damage: int) -> void:
+		sfx.play("rocket_boom", at)
+		camera_rig.add_shake(rocket_boom_shake + (rocket_hit_shake if hulk_damage > 0 else 0.0))
+		if hulk_damage > 0:
+			hit_stop(rocket_hit_stop))
 
 
 func _on_pounded(kills: int) -> void:
