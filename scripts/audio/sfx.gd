@@ -61,6 +61,12 @@ var groups := {
 		"files": ["a_man_yelping_#1-1791320659837.mp3", "a_man_yelping_#4-1791320668270.mp3", "a_woman_yelping_#1-1791320682536.mp3", "a_woman_yelping_#2-1791320687537.mp3"],
 		"rms": [-10.4, -17.2, -8.9, -11.1], "target": -20.0, "max_voices": 2, "min_interval": 0.12, "chance": 0.4, "pitch": 0.1,
 	},
+	# Placeholder until there's a real sword-slice sound: the thudding punch pitched up into a
+	# sharper smack. Swap "files" (and re-measure "rms") when one exists.
+	"ninja_hit": {
+		"files": ["Heavy_thudding_punch_#4-1791320271989.mp3"],
+		"rms": [-9.1], "target": -13.0, "max_voices": 2, "min_interval": 0.08, "chance": 1.0, "pitch": 0.08, "pitch_base": 1.5,
+	},
 }
 
 var _pool: Array[AudioStreamPlayer3D] = []

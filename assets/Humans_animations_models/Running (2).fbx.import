@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b83yjctgh7gvw"
-path="res://.godot/imported/tripo_convert_0ef4d69c-8b8b-4940-88c3-ccca39dd4951.fbx-325625c604e91e76b8cb5cbb1dea163e.scn"
+uid="uid://dnbnp03cjuubd"
+path="res://.godot/imported/Running (2).fbx-2b74c9953eebc20958a141c83839396a.scn"
 
 [deps]
 
-source_file="res://assets/base_models/tripo_convert_0ef4d69c-8b8b-4940-88c3-ccca39dd4951.fbx"
-dest_files=["res://.godot/imported/tripo_convert_0ef4d69c-8b8b-4940-88c3-ccca39dd4951.fbx-325625c604e91e76b8cb5cbb1dea163e.scn"]
+source_file="res://assets/Humans_animations_models/Running (2).fbx"
+dest_files=["res://.godot/imported/Running (2).fbx-2b74c9953eebc20958a141c83839396a.scn"]
 
 [params]
 
@@ -19,7 +19,7 @@ nodes/root_script=null
 mesh_library/use_node_names_as_mesh_names=false
 array_mesh/deduplicate_surfaces=true
 nodes/apply_root_scale=true
-nodes/root_scale=2.03
+nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
 nodes/use_name_suffixes=true
 nodes/use_node_type_suffixes=true
@@ -30,7 +30,7 @@ meshes/light_baking=1
 meshes/lightmap_texel_size=0.2
 meshes/force_disable_compression=false
 skins/use_named_skins=true
-animation/import=false
+animation/import=true
 animation/fps=30
 animation/trimming=true
 animation/remove_immutable_tracks=true

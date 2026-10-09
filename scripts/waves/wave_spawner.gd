@@ -13,7 +13,7 @@ signal wave_cleared(wave: int)
 signal kills_changed(total: int)
 ## One soldier died, and where. For effects that care about position (death yelps).
 signal human_killed(position: Vector3)
-## A special enemy (rocket soldier) entered the field. Main hooks up its sounds and shake.
+## A special enemy (rocket soldier, ninja) entered the field. Main hooks up its sounds and shake.
 signal special_spawned(human: Human)
 
 enum State { IDLE, BREAK, SPAWNING, FIGHTING }
@@ -52,6 +52,13 @@ enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 ## behind a screen of runners instead of alone.
 @export_range(0.0, 1.0) var rocket_spawn_at: float = 0.25
 
+@export_group("Ninjas")
+@export var ninja_scene: PackedScene = preload("res://scenes/enemies/ninja_soldier.tscn")
+@export var ninjas_per_wave: int = 1
+## She drops in once this fraction of the wave has spawned: after the rocket soldier, while
+## the Hulk is busy with the crowd.
+@export_range(0.0, 1.0) var ninja_spawn_at: float = 0.5
+
 @export_group("Difficulty")
 ## Run speed bonus per wave (0.04 = +4% per wave).
 @export var speed_growth: float = 0.04
@@ -72,6 +79,7 @@ var _to_spawn: int = 0
 var _timer: float = 0.0
 var _next_side: float = -1.0
 var _rockets_left: int = 0
+var _ninjas_left: int = 0
 var _spawned_this_wave: int = 0
 
 
@@ -101,9 +109,13 @@ func _physics_process(delta: float) -> void:
 				_timer += current_interval()
 				if _rockets_left > 0 and _spawned_this_wave >= ceili(wave_size(wave) * rocket_spawn_at):
 					spawn_rocket_soldier()
+				if _ninjas_left > 0 and _spawned_this_wave >= ceili(wave_size(wave) * ninja_spawn_at):
+					spawn_ninja()
 			if _to_spawn == 0:
 				while _rockets_left > 0:
 					spawn_rocket_soldier()
+				while _ninjas_left > 0:
+					spawn_ninja()
 				state = State.FIGHTING
 				_check_cleared()
 
@@ -146,9 +158,18 @@ func spawn_rocket_soldier() -> Human:
 	return soldier
 
 
+## One ninja, at the next end of the corridor. Counts toward the wave like anyone.
+func spawn_ninja() -> Human:
+	_ninjas_left = maxi(_ninjas_left - 1, 0)
+	var ninja := spawn_one(ninja_scene)
+	special_spawned.emit(ninja)
+	return ninja
+
+
 func _start_wave() -> void:
 	wave += 1
 	_rockets_left = rocket_soldiers_per_wave
+	_ninjas_left = ninjas_per_wave
 	_spawned_this_wave = 0
 	_to_spawn = wave_size(wave)
 	_timer = 0.0

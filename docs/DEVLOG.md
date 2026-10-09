@@ -350,6 +350,52 @@ Steps 4-17 pass, with these test fixes:
 
 **Balance note:** a rocket soldier left alone deals 14 about every 3.1 s. A Hulk that ignores him dies in about 20 s; in the soak, a stationary Hulk lost 179 HP in 40 s. That's intended (hunt him first), but it's the first knob to turn: `Rocket.max_damage` / `min_damage`, `RocketSoldier.reload_time` / `aim_time`.
 
+**Step 13 (ninja), 2026-10-08.** One ninja joins each wave (`WaveSpawner.ninjas_per_wave`). She drops in once half the wave has spawned (`ninja_spawn_at`), after the rocket soldier, while the Hulk is busy with the crowd. She counts toward the wave like anyone and still dies in one hit.
+
+**Model and clips:** Will's female ninja, rigged in Mixamo, so her clips play on her own skeleton with no retargeting.
+- `assets/humans/ninja/Run.fbx` is the model plus the run (imported as a scene, `root_scale` 1.7, about 1.55 m tall).
+- `Flip Kick.fbx` and `Two Hand Club Combo.fbx` import as animation libraries.
+- `Running Arc.fbx` is imported but unused. It's a turning burst (her hips swing 47 degrees over 0.6 s), so it can't loop for circling.
+- `katana.glb` is used twice, one in each fist on a BoneAttachment3D. The blades splay 12 degrees apart so they don't overlap in the two-handed swings.
+- `ninja+character+3d+model.glb` (the unrigged Tripo original) is unused.
+
+**Behaviour (`scripts/enemies/ninja_soldier.gd`):**
+- STALK: runs in at 7.5 m/s (faster than the Hulk) and circles at 6.5 m for 1.0-2.4 s.
+- POUNCE: Flip Kick. Code steers her body from takeoff to a spot right in front of the Hulk, so the jump fits any gap from 2.5 to 9 m. In the air she collides with the world only, so she sails over the crowd. The heel lands for 4.
+- SLASH: the two-katana combo, 3 cuts for 2 each. She's rooted for the whole combo: that's the window to punch her.
+- RETREAT: sprints back out, comes around from the other side, and stalks again.
+- Full cycle if the Hulk stands still: 10 damage every ~6 s.
+
+**Sound and feel:** new sfx group `ninja_hit` (the thudding punch pitched up 1.5x) is a stand-in until there's a real sword sound. Main adds shake on every hit, plus more shake and a short hit stop on the flip kick.
+
+**Tests:** step 19 passed all 23 checks. It covers:
+- one per wave, counted in the wave
+- human sized, a katana in each fist, her own run clip, faster than the Hulk
+- stalk, pounce from range, airborne flip, landing in his face, flip kick for 4, three cuts for 2, retreat and stalk again
+- collision restored after the flip; sailing over a wall of 5 soldiers to land the kick
+- punchable mid-combo; dies and counts as a kill; can be eaten mid-flip; stands down when the Hulk dies
+
+Steps 4-18 pass, with these test fixes:
+- Steps 7 and 18 turn ninjas off (they check wave counts).
+- Step 15 expects 16 clips.
+
+Two failures were already there before this step:
+- Step 3's swarm check is the known flaky one.
+- Step 14's "ground pound line cuts off the punch line" fails the same way with the ninja changes removed. Likely test timing (the pound starts while the punch is still swinging), not a voice bug. Not chased yet.
+
+The soak test now handles ninjas.
+
+**Step 13b (ninja afterimages), 2026-10-08.** Will's fix for a dark ninja on a dark floor: smoke afterimages.
+- `scripts/vfx/afterimage_trail.gd` (`AfterimageTrail`) is reusable on any rigged character: add it as a child, call `setup(model)`.
+- Every `interval` (0.07 s) while she's moving faster than `min_speed` (4 m/s), and for the whole flip, it bakes her skinned mesh in its current pose (`bake_mesh_from_current_skeleton_pose`) and copies the katanas. Each ghost is parented to the level, so it stays where she was.
+- `shaders/afterimage.gdshader`: pale violet-white, brighter at the silhouette edge, no depth writes. Each ghost fades in (a new ghost sits right on top of her and would white her out), then breaks up into rising noise smoke and fades over `lifetime` (0.4 s). About 5 ghosts at a time.
+- No ghosts while she stands in the combo: the trail shows motion, and standing still next to the Hulk she's easy to see.
+- Cost: about 1.3 ms per snapshot on the lab's software renderer (much less on a GPU), roughly 14 snapshots per second while she's moving. Fine for one ninja. If ninjas ever come in groups, raise `interval` first.
+- Headless runs (tests) turn the trail off: with no renderer, skinned meshes can't be baked.
+
+**Tests:** steps 18 and 19 pass. A new rendered check (`shottrail.gd`, it needs a renderer) passes 6 of 6: trail on, ~5 ghosts while running and while flipping, none during the combo, and every ghost cleaned up after she dies.
+- Step 18's "hands on the grips while running" is borderline flaky: it read 0.020 m against a < 0.02 limit once, then passed 3 of 3. It depends on where in the stride he spawns.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -387,3 +433,7 @@ Steps 4-17 pass, with these test fixes:
 - **Human (human.tscn):** move_speed, speed_variance, flank_range, flank_strength, attack_cooldown, attack_reach
 - **Main:** debug_start_count, debug_spawn_batch
 - **Camera height/angle:** the transform on CameraRig/Camera3D. It currently sits 16 m up and 11 m back, tilted down about 55 degrees.
+- **NinjaSoldier (ninja_soldier.tscn):** move_speed, stalk_range, stalk_time_min/max, pounce_min/max, flip_damage, slash_damage, strike_reach, flip_speed, slash_speed, retreat_time, katana_scale, grip_point, blade_splay_degrees
+- **Spawner > Ninjas:** ninja_scene, ninjas_per_wave, ninja_spawn_at
+- **Main > Ninja:** ninja_hit_shake, ninja_flip_shake, ninja_flip_hit_stop
+- **AfterimageTrail (created in code by the ninja, so edit the defaults at the top of `scripts/vfx/afterimage_trail.gd`):** interval, lifetime, min_speed, smoke_color, rim_color, base_alpha, grow, enabled. Shader extras in `shaders/afterimage.gdshader`: rim_power, smoke_scale, fade_in

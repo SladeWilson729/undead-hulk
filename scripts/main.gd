@@ -9,6 +9,12 @@ extends Node3D
 @export var rocket_hit_shake: float = 0.35
 @export var rocket_hit_stop: float = 0.06
 
+@export_group("Ninja")
+@export var ninja_hit_shake: float = 0.18
+## The flip kick lands harder than a single cut: a touch more shake and a short hit stop.
+@export var ninja_flip_shake: float = 0.35
+@export var ninja_flip_hit_stop: float = 0.05
+
 @export_group("Audio")
 ## Music volume (dB, on top of the Music bus) after the Hulk dies.
 @export var music_death_duck_db: float = -14.0
@@ -105,6 +111,17 @@ func _on_special_spawned(human: Human) -> void:
 	var rs := human as RocketSoldier
 	if rs:
 		rs.fired.connect(_on_rocket_fired)
+	var ninja := human as NinjaSoldier
+	if ninja:
+		ninja.struck.connect(_on_ninja_struck)
+
+
+func _on_ninja_struck(at: Vector3, damage: int) -> void:
+	sfx.play("ninja_hit", at)
+	var big := damage >= 4  # The flip kick.
+	camera_rig.add_shake(ninja_flip_shake if big else ninja_hit_shake)
+	if big:
+		hit_stop(ninja_flip_hit_stop)
 
 
 func _on_rocket_fired(rocket: Rocket) -> void:
