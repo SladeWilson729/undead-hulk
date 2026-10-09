@@ -3,9 +3,14 @@ extends CharacterBody3D
 ## A run-of-the-mill soldier trying to stop the Hulk.
 ## Chases in a straight line, piles up around the Hulk, and punches it for 1 damage
 ## on its own cooldown. Dies in one hit: attacks call kill().
+## Tougher enemies (the specials) set hits_to_kill above 1: then kill() from a punch, pound,
+## rubble or blast only takes a hit off (flash, knockback, a short stagger) until the last one.
+## Eating, a thrown car, the Foolsball charge and falling always kill outright.
 ## Looks: one of the rigged soldiers in SoldierVariants, picked at random on spawn.
 
 signal died(human: Human)
+## Took a hit and lived (only enemies with hits_to_kill > 1). hits_left = hits still needed.
+signal hurt(human: Human, hits_left: int)
 
 enum State { CHASE, ATTACK, IDLE }
 
@@ -49,6 +54,8 @@ const PROBE_RADIUS := 0.35
 const PROBE_HEIGHT := 0.45
 const AVOID_DIRECTIONS := 16
 const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
+## These causes kill anyone, however tough. UNKNOWN is a plain kill() call (debug, tests).
+const INSTANT_CAUSES := [KillCause.UNKNOWN, KillCause.EATEN, KillCause.CRUSHED, KillCause.TACKLED, KillCause.FELL]
 
 @export_group("Animation")
 ## Fastest the Running clip may play. Above this the legs blur; a little foot slide is better.
@@ -58,6 +65,15 @@ const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 @export var punch_loop_start: float = 0.45
 @export var punch_loop_end: float = 1.55
 @export var anim_blend: float = 0.15
+
+@export_group("Toughness")
+## Hits from punches, pounds, rubble, rocket blasts and Glitter Bombs it takes to die.
+## Grunts are 1. Eaten, crushed by a car, tackled or fallen always dies at once.
+@export var hits_to_kill: int = 1
+## Seconds a hit that doesn't kill leaves him reeling (no moving, no attacking).
+@export var stagger_time: float = 0.45
+## How much of the hit's sideways launch becomes knockback on a hit that doesn't kill.
+@export var hit_knockback: float = 0.35
 
 @export_group("Score")
 ## Name on the run summary (special enemies are listed by name).
@@ -90,6 +106,12 @@ var death_cause: int = KillCause.UNKNOWN
 var score_bonus: float = 0.0
 ## Set before kill() to burst this soldier into confetti instead of a corpse (Glitter Bomb).
 var force_confetti: bool = false
+## Hits still needed to kill him (starts at hits_to_kill).
+var hits_left: int = 1
+## Seconds of stagger left after a hit that didn't kill.
+var stagger_left: float = 0.0
+var _flash: StandardMaterial3D
+var _flash_tween: Tween
 
 var _ap: AnimationPlayer
 var _avoid_timer: float = 0.0
@@ -104,6 +126,7 @@ var _run_speed: float = 3.0
 
 func _ready() -> void:
 	add_to_group("enemies")
+	hits_left = maxi(hits_to_kill, 1)
 	_speed = move_speed * randf_range(1.0 - speed_variance, 1.0 + speed_variance)
 	# Stagger the first swing so a group that arrives together doesn't hit in perfect sync.
 	_cooldown = randf_range(0.0, 0.4)
@@ -123,6 +146,8 @@ func _physics_process(delta: float) -> void:
 	# Safety net: a human that somehow leaves the bridge alive would block "wave cleared" forever.
 	if global_position.y < -10.0:
 		kill(Vector3.ZERO, KillCause.FELL)
+		return
+	if _stagger_step(delta):
 		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -298,10 +323,69 @@ func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:
 	return pinned
 
 
-## One-hit death. Hands off to the level's DeathDirector, which picks ragdoll, cheap body,
+## Takes the hit instead of dying when he has hits to spare. Called first thing by kill()
+## (and by subclasses' kill() before they drop gear or cancel moves). Returns true if he
+## survived, false if this hit kills him. Safe to call twice for the same hit: once he's on
+## his last hit it changes nothing.
+func absorb_hit(launch_velocity: Vector3, cause: int) -> bool:
+	if _dead or hits_left <= 1 or cause in INSTANT_CAUSES:
+		return false
+	hits_left -= 1
+	# Augments set these up for a kill; this hit isn't one.
+	force_confetti = false
+	score_bonus = 0.0
+	velocity = Vector3(launch_velocity.x, 0.0, launch_velocity.z) * hit_knockback
+	stagger_left = stagger_time
+	_flash_hit()
+	_on_hurt()
+	hurt.emit(self, hits_left)
+	return true
+
+
+## Subclass hook: a hit landed and he lived (cancel an attack in progress, etc.).
+func _on_hurt() -> void:
+	pass
+
+
+## While staggered: slide off the knockback, no thinking, no attacking. Returns true while
+## the stagger lasts (the caller skips its normal frame).
+func _stagger_step(delta: float) -> bool:
+	if stagger_left <= 0.0:
+		return false
+	stagger_left -= delta
+	if not is_on_floor():
+		velocity.y -= _gravity * delta
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(Vector3.ZERO, acceleration * 0.6 * delta)
+	velocity.x = horizontal.x
+	velocity.z = horizontal.z
+	move_and_slide()
+	if _ap:
+		_ap.speed_scale = 0.0  # Frozen mid-pose: reads as a flinch.
+	return true
+
+
+## White flash over the whole model, fading fast.
+func _flash_hit() -> void:
+	if model == null:
+		return
+	if _flash == null:
+		_flash = StandardMaterial3D.new()
+		_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_flash.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
+		for mesh in model.find_children("*", "MeshInstance3D", true, false):
+			(mesh as MeshInstance3D).material_overlay = _flash
+	if _flash_tween:
+		_flash_tween.kill()
+	_flash.albedo_color.a = 0.85
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_flash, "albedo_color:a", 0.0, 0.22)
+
+
+## Death (or, for tough enemies, a hit: see absorb_hit). Hands off to the level's DeathDirector, which picks ragdoll, cheap body,
 ## or explosion. The living human is removed either way.
 func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
-	if _dead:
+	if _dead or absorb_hit(launch_velocity, cause):
 		return
 	_dead = true
 	death_cause = cause

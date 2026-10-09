@@ -21,6 +21,10 @@ extends Node3D
 @export var bonk_shake: float = 0.6
 @export var bonk_hit_stop: float = 0.08
 
+@export_group("Tough enemies")
+## Camera kick when a ninja or rocket soldier takes a hit and lives.
+@export var special_hurt_shake: float = 0.12
+
 @export_group("Audio")
 ## Music volume (dB, on top of the Music bus) after the Hulk dies.
 @export var music_death_duck_db: float = -14.0
@@ -69,7 +73,7 @@ func _ready() -> void:
 	hud.bind_eat(hulk.eat)
 	hud.bind_charge(hulk.charge)
 	hulk.charge.tackled.connect(func(at: Vector3) -> void:
-		sfx.play("punch_hit", at)
+		sfx.play("tackle_hit", at)
 		camera_rig.add_shake(tackle_shake))
 	hulk.charge.bonked.connect(func(at: Vector3) -> void:
 		sfx.play("pound_hit", at)
@@ -150,6 +154,10 @@ func _on_special_spawned(human: Human) -> void:
 	var rs := human as RocketSoldier
 	if rs:
 		rs.fired.connect(_on_rocket_fired)
+	# Tough enemies: a grunt and a small kick when a hit doesn't finish them.
+	human.hurt.connect(func(h: Human, _left: int) -> void:
+		sfx.play("special_hurt", h.global_position + Vector3.UP * 1.5)
+		camera_rig.add_shake(special_hurt_shake))
 	var ninja := human as NinjaSoldier
 	if ninja:
 		ninja.struck.connect(_on_ninja_struck)

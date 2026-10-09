@@ -91,6 +91,9 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < -10.0:
 		kill(Vector3.ZERO, KillCause.FELL)
 		return
+	if _stagger_step(delta):
+		_update_laser()
+		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	var desired := Vector3.ZERO
@@ -227,10 +230,16 @@ func _animate() -> void:
 ## Dies like any soldier, but first the rig lets go (the ragdoll needs the bones) and the
 ## launcher drops as a loose prop.
 func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
-	if not is_in_group("enemies"):
+	if not is_in_group("enemies") or absorb_hit(launch_velocity, cause):
 		return
 	_release_gear(launch_velocity)
 	super.kill(launch_velocity, cause)
+
+
+## Hit and still standing: a shot being lined up is lost. He gets up and starts over.
+func _on_hurt() -> void:
+	if mode == Mode.KNEEL or mode == Mode.AIM or mode == Mode.RELOAD:
+		_set_mode(Mode.STAND, kneel_time)
 
 
 func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:

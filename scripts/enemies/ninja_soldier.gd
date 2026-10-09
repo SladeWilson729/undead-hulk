@@ -154,6 +154,8 @@ func _physics_process(delta: float) -> void:
 		if mode != Mode.IDLE:
 			_end_pounce()
 			_set_mode(Mode.IDLE)
+	if _stagger_step(delta):
+		return
 	if mode == Mode.POUNCE:
 		_pounce(delta)
 		return
@@ -295,8 +297,19 @@ func _set_mode(m: Mode, timer: float = 0.0) -> void:
 
 
 func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
+	if absorb_hit(launch_velocity, cause):
+		return
 	_end_pounce()
 	super.kill(launch_velocity, cause)
+
+
+## Hit and still standing: whatever she was doing (flip, combo) is cut off and she backs off
+## once the stagger ends. Hitting her mid-combo is how you stop the cuts.
+func _on_hurt() -> void:
+	_end_pounce()
+	_set_mode(Mode.RETREAT, retreat_time)
+	_flank_side = -_flank_side
+	_ap.play("ninja/run", 0.1)
 
 
 func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:

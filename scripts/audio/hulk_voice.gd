@@ -4,7 +4,7 @@ extends AudioStreamPlayer
 ## Child of the Hulk; listens to the attack nodes' signals and picks a line.
 ##
 ## Priority: a line can cut off a line of LOWER priority.
-##   punch (0) < pound, lift, throw, eat (1) < victory (2)
+##   punch (0) < pound, lift, throw, eat, charge (1) < victory (2)
 ## Action lines can also cut off an earlier ACTION line: the newest move wins, so a throw
 ## right after the lift says the throw line instead of finishing the lift line.
 ## Punch lines are also rationed (punch_chance) and never interrupt anything, so holding
@@ -26,6 +26,7 @@ const LEAD_TRIM := {
 	"victory-1.mp3": 0.145, "victory-2.mp3": 0.175, "victory-3.mp3": 0.255,
 	"throw_1.mp3": 0.125, "throw_2.mp3": 0.115, "throw_3.mp3": 0.115,
 	"eat_1.mp3": 0.055, "eat_2.mp3": 0.105, "eat_3.mp3": 0.095,
+	"hulk_charge_1.mp3": 0.055, "hulk_charge_2.mp3": 0.245,
 }
 ## Used for any file not in LEAD_TRIM (a new line you add in the Inspector).
 const DEFAULT_LEAD_TRIM := 0.08
@@ -48,6 +49,10 @@ const DEFAULT_LEAD_TRIM := 0.08
 ## Play when he grabs a soldier to eat.
 @export var eat_lines: Array[AudioStream] = [
 	load(SFX + "eat_1.mp3"), load(SFX + "eat_2.mp3"), load(SFX + "eat_3.mp3"),
+]
+## Play when he digs in for the Foolsball charge.
+@export var charge_lines: Array[AudioStream] = [
+	load(SFX + "hulk_charge/hulk_charge_1.mp3"), load(SFX + "hulk_charge/hulk_charge_2.mp3"),
 ]
 @export var victory_lines: Array[AudioStream] = [
 	load(SFX + "victory-1.mp3"), load(SFX + "victory-2.mp3"), load(SFX + "victory-3.mp3"),
@@ -73,6 +78,7 @@ func _ready() -> void:
 	hulk.get_node("CarryThrow").lifted.connect(func() -> void: say(lift_lines, Priority.ACTION))
 	hulk.get_node("CarryThrow").throw_started.connect(func() -> void: say(throw_lines, Priority.ACTION))
 	hulk.get_node("EatSoldier").grabbed.connect(func() -> void: say(eat_lines, Priority.ACTION))
+	hulk.get_node("FoolsballCharge").charged.connect(func() -> void: say(charge_lines, Priority.ACTION))
 	hulk.get_node("Animator").victory_started.connect(func() -> void: say(victory_lines, Priority.VICTORY))
 	# Dead men tell no jokes.
 	hulk.get_node("Health").died.connect(func() -> void:

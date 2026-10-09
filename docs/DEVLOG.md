@@ -539,7 +539,8 @@ Steps 4-22, Codex's two run-end checks and the soak all pass (steps 7, 11, 14, 1
 - **The helmet:** Will's red Tripo football helmet (`assets/props/helmet/`) goes on when the augment is picked.
   - On this rig the visible head is skinned to the **Neck** bone; the Head bone has no vertices. The helmet rides the Neck on a BoneAttachment3D.
   - It is placed on the bare mesh (`helmet_offset`, mesh rest space) and carried into the bone's space by the Neck's skin bind pose. That's the same math that moves his head, so it can't drift during punches, the pound or the charge.
-  - It gets the painterly shader like the rest of him. His big eye peeks through the face cage.
+  - The fit is measured, not eyeballed. His head (Neck-weighted vertices) runs chin y 0.58 to crown 0.76, back of skull z 0.04 to face 0.18, 0.14 wide. The helmet's inside is about 0.7 wide and 0.73 deep. At scale 0.26 and offset (0, 0.565, 0.142) the shell's inside back sits just behind his skull, the crown sits over his crown, and the face cage clears his face. The first pass (0.25 at z 0.065) sat too far back, and his face poked through the cage.
+  - It gets the painterly shader like the rest of him.
 - **Elsewhere:**
   - the HUD adds a CHARGE line only once the augment is owned
   - Main adds a punch-hit sound and a small shake per tackle, and a thud, big shake and hit stop on a BONK
@@ -553,6 +554,37 @@ Steps 4-22, Codex's two run-end checks and the soak all pass (steps 7, 11, 14, 1
 - he runs through a pillar and punts the car
 
 Step 23 was updated for 8 augments (commons > rares > legendaries). Steps 3-23, Codex's run-end checks and the soak all pass. The retarget was rendered side and front against the source clip, and a full charge (windup, tackles, pillar, splats) from the game camera.
+
+**Step 20 (tough specials and charge sounds), 2026-10-09.** Ninjas take 2 hits, rocket soldiers 3, grunts still 1.
+- **`Human`:**
+  - new Toughness exports: `hits_to_kill` (default 1), `stagger_time` 0.45 s, `hit_knockback` 0.35
+  - `kill()` first calls `absorb_hit()`. While a tough enemy has hits to spare, a punch, stomp, rubble, rocket blast or Glitter Bomb only takes one off, and the hit:
+    - flashes the whole model white (a material overlay, 0.22 s fade)
+    - knocks him back with a third of the hit's sideways force
+    - freezes him for the stagger: no moving, no attacking, the animation held mid-pose
+    - emits `hurt(human, hits_left)`
+  - a hit that doesn't kill scores nothing and isn't a kill
+  - **Always kill outright:** eaten, crushed by a car, tackled by the charge, fell, and a plain `kill()` with no cause (debug and tests). `pin_to` (grab to eat, car pin) always kills.
+  - a survived Glitter Bomb hit clears the confetti flag and the bonus, so they don't carry over to a later death
+- **Hits interrupt attacks:**
+  - Ninja: a hit cuts off the flip or the sword combo (collision restored mid-flip), and she retreats from the other side once the stagger ends. Hitting her mid-combo is how you stop the cuts.
+  - Rocket soldier: a hit while kneeling, aiming or reloading loses the shot. He stands up and starts over.
+- **Feedback:** Main plays a short yelp (`special_hurt`) and a small shake (`special_hurt_shake` 0.12) on every survived hit.
+- **Charge sounds (Will's files in `assets/sound/sound effects/hulk_charge/`):**
+  - tackles play `tackle_hit` (the football crunch, first 1.1 s)
+  - digging in plays one of two charge yells on the Hulk's voice (ACTION priority, lead trims 0.055 and 0.245 s)
+
+**Tests:** step 25 passed all 28 checks. It covers:
+- toughness per enemy; a grunt dies to one punch
+- the ninja's first hit: survives, hurt fired, flash, no kill or points, attack cancelled, knockback, stagger that wears off; the second hit kills and records one Smashed kill
+- the rocket soldier survives a stomp and rubble, loses his aim, and dies on the third hit
+- eaten, crushed, tackled and fell each kill a fresh rocket soldier; grabbing works at full health
+- a survived confetti hit leaves nothing behind
+- real punches through the full pipeline: one hit, then the kill
+- a hit mid-flip ends the pounce cleanly
+- the charge yell plays and the new sounds are registered
+
+Updated for the change: step 15 counts sound clips from the groups table instead of a fixed 17; step 22's ninja bounty check hits her twice. Steps 3-25, Codex's run-end checks and the soak all pass. The flash was rendered and checked.
 
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
@@ -605,3 +637,6 @@ Step 23 was updated for 8 augments (commons > rares > legendaries). Steps 3-23, 
 - **Hulk/Animator > Charge clips:** charge_loop_speed, charge_end_speed, charge_dazed_speed
 - **Main > Foolsball charge:** tackle_shake, bonk_shake, bonk_hit_stop
 - **Run:** points_tackled
+- **Human > Toughness (set per scene; ninja_soldier.tscn 2, rocket_soldier.tscn 3):** hits_to_kill, stagger_time, hit_knockback
+- **Main > Tough enemies:** special_hurt_shake
+- **Hulk/Voice:** charge_lines

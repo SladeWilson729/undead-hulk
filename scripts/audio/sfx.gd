@@ -75,6 +75,17 @@ var groups := {
 		"rms": [-13.7], "target": -12.0, "max_voices": 2, "min_interval": 0.08, "chance": 1.0, "pitch": 0.08,
 		"start": 0.0, "end": 0.42,
 	},
+	# Foolsball charge running a soldier over. The file's crunch is done by ~1.1 s.
+	"tackle_hit": {
+		"files": ["hulk_charge/an_enormous_football_#1-1791564005298.mp3"],
+		"rms": [-10.7], "target": -11.0, "max_voices": 2, "min_interval": 0.06, "chance": 1.0, "pitch": 0.08,
+		"start": 0.0, "end": 1.1,
+	},
+	# A tough enemy (ninja, rocket soldier) taking a hit and living: a short grunt.
+	"special_hurt": {
+		"files": ["a_man_yelping_#1-1791320659837.mp3", "a_man_yelping_#4-1791320668270.mp3", "a_woman_yelping_#1-1791320682536.mp3", "a_woman_yelping_#2-1791320687537.mp3"],
+		"rms": [-10.4, -17.2, -8.9, -11.1], "target": -16.0, "max_voices": 2, "min_interval": 0.1, "chance": 1.0, "pitch": 0.1,
+	},
 }
 
 var _pool: Array[AudioStreamPlayer3D] = []
