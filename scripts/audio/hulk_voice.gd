@@ -3,8 +3,10 @@ extends AudioStreamPlayer
 ## The Hulk's voice. One channel, so lines never stack into a choir of Hulks.
 ## Child of the Hulk; listens to the attack nodes' signals and picks a line.
 ##
-## Priority: a line can only cut off a line of LOWER priority.
-##   punch (0) < pound, lift, throw (1) < victory (2)
+## Priority: a line can cut off a line of LOWER priority.
+##   punch (0) < pound, lift, throw, eat (1) < victory (2)
+## Action lines can also cut off an earlier ACTION line: the newest move wins, so a throw
+## right after the lift says the throw line instead of finishing the lift line.
 ## Punch lines are also rationed (punch_chance) and never interrupt anything, so holding
 ## the punch button gives an occasional grunt instead of a machine gun of "Hup!"s.
 ##
@@ -22,6 +24,8 @@ const LEAD_TRIM := {
 	"punch-1.mp3": 0.095, "punch-2.mp3": 0.065, "punch-3.mp3": 0.045, "punch-4.mp3": 0.145,
 	"punch-5.mp3": 0.155, "punch-6.mp3": 0.175, "punch-7.mp3": 0.035, "punch-8.mp3": 0.125,
 	"victory-1.mp3": 0.145, "victory-2.mp3": 0.175, "victory-3.mp3": 0.255,
+	"throw_1.mp3": 0.125, "throw_2.mp3": 0.115, "throw_3.mp3": 0.115,
+	"eat_1.mp3": 0.055, "eat_2.mp3": 0.105, "eat_3.mp3": 0.095,
 }
 ## Used for any file not in LEAD_TRIM (a new line you add in the Inspector).
 const DEFAULT_LEAD_TRIM := 0.08
@@ -37,10 +41,14 @@ const DEFAULT_LEAD_TRIM := 0.08
 @export var lift_lines: Array[AudioStream] = [
 	load(SFX + "lift-car-1.mp3"), load(SFX + "lift-car-2.mp3"), load(SFX + "lift-car-3.mp3"),
 ]
-## Nothing recorded yet for the throw; add lines here and they play on the throw click.
-@export var throw_lines: Array[AudioStream] = []
-## Nothing recorded yet for eating; add lines here and they play when he grabs a soldier.
-@export var eat_lines: Array[AudioStream] = []
+## Play on the throw click.
+@export var throw_lines: Array[AudioStream] = [
+	load(SFX + "throw_1.mp3"), load(SFX + "throw_2.mp3"), load(SFX + "throw_3.mp3"),
+]
+## Play when he grabs a soldier to eat.
+@export var eat_lines: Array[AudioStream] = [
+	load(SFX + "eat_1.mp3"), load(SFX + "eat_2.mp3"), load(SFX + "eat_3.mp3"),
+]
 @export var victory_lines: Array[AudioStream] = [
 	load(SFX + "victory-1.mp3"), load(SFX + "victory-2.mp3"), load(SFX + "victory-3.mp3"),
 ]
@@ -83,7 +91,7 @@ func _on_swung() -> void:
 func say(lines: Array[AudioStream], priority: int) -> bool:
 	if lines.is_empty():
 		return false
-	if playing and priority <= _priority:
+	if playing and (priority < _priority or (priority == _priority and priority != Priority.ACTION)):
 		return false
 	var line := _pick(lines)
 	stream = line

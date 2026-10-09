@@ -413,6 +413,20 @@ A rendered frame matches the old view. Steps 4-13, 15, 16, 18 and 19 pass. Pre-e
 - step 14: the pound-line check (already failing)
 - step 17: "5 of 6 got round" failed 1 in 3 runs with the old main.tscn and 2 in 3 with the new one, so it's randomness. It's worth a look later.
 
+**Step 15 (new sounds), 2026-10-08.** Will added a sword, rocket, throw and eat sounds. Levels measured with ffmpeg as before.
+- **Sword:** `ninja_hit` now uses `Heavy_sword_chopping_#2`. That file holds a sharp chop (0-0.42 s) and then a slow swelling whoosh (0.9-1.65 s), so Sfx gained optional `start`/`end` per group to play just a slice. A hit plays only the chop. The whoosh is unused for now; it could become a swing sound timed to land on each cut.
+- **Rocket:** `rocket_launch` is `Heavy_rocket_launch_#4`; `rocket_boom` is `violent_explosion_#3`; the cannonball stand-ins are gone. New `rocket_flyby` (`Rocket_flying_past_#2`) plays once when a rocket comes within `Rocket.flyby_distance` (6 m) of the Hulk. That's about a third of a second of "incoming!" before a direct hit, and the whoosh on a near miss.
+- **Voice:** `throw_1-3` and `eat_1-3` fill HulkVoice's throw_lines and eat_lines, with measured lead trims (55-125 ms).
+- **Voice priority change:** a newer ACTION line (pound, lift, throw, eat) now cuts off an older one; before, equal priority couldn't interrupt. Pound lines run up to ~5 s, so the old rule meant a lift right after a pound stayed silent, and a throw right after the lift never got its line. Punch grunts still never interrupt anything.
+
+**Tests:** step 21 passed all 13 checks. It covers:
+- every new clip loads
+- the chop stops at the end of its slice
+- launch, then whoosh, then boom, in that order; a near miss 1.5 m away still whooshes
+- throw and eat lines play past their lead silence
+
+Step 14's long-standing failure was the test: it fired a ground pound mid-punch, which the game correctly refuses. With that fixed, the test exposed the real priority problem above. Step 14 now passes 3 of 3, with a new check that the throw line cuts off the lift line. Step 15 expects 17 clips. Steps 12, 13, 16, 18, 19 and 20 pass.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -427,7 +441,7 @@ A rendered frame matches the old view. Steps 4-13, 15, 16, 18 and 19 pass. Pre-e
 - **Hulk/Voice (HulkVoice):** the line lists per event, punch_chance, pitch_variance; bus volumes in the Audio tab
 - **Main > Audio:** music_death_duck_db
 - **RocketSoldier (rocket_soldier.tscn):** max_range, preferred_range, min_range, kneel_time, aim_time, reload_time, show_aim_laser
-- **Rocket (scripts/weapons/rocket.gd):** speed, max_life, blast_radius, max_damage, min_damage, blast_launch
+- **Rocket (scripts/weapons/rocket.gd):** speed, max_life, blast_radius, max_damage, min_damage, blast_launch, flyby_distance
 - **RocketPose (vars in rocket_pose.gd):** launcher_scale, launcher_offset, torso_twist, kneel_drop, kneel_lean, recoil_time, recoil_back, recoil_pitch, recoil_lean
 - **Spawner > Rocket soldiers:** rocket_soldier_scene, rocket_soldiers_per_wave, rocket_spawn_at
 - **Main > Rockets:** rocket_launch_shake, rocket_boom_shake, rocket_hit_shake, rocket_hit_stop

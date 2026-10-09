@@ -14,6 +14,10 @@ extends Node3D
 ##                  of stacking into one loud phasey blob
 ##   chance       - 0-1 chance a request actually plays
 ##   pitch        - random pitch spread (+/-)
+##   pitch_base   - (optional) center pitch, default 1.0
+##   start / end  - (optional) play only this slice of the file, in seconds. For a file that
+##                  holds more than one sound (the sword file has a chop, then a whoosh).
+##                  rms is then measured on the slice, not the whole file.
 ## Re-measure `rms` if a file is regenerated (ffmpeg volumedetect "mean_volume").
 
 const DIR := "res://assets/sound/sound effects/"
@@ -43,15 +47,18 @@ var groups := {
 		# Turned down 8 dB after playtesting: a 4 s crash tail re-triggered by every bounce was too much.
 		"rms": [-13.8, -10.7], "target": -20.0, "max_voices": 1, "min_interval": 0.4, "chance": 1.0, "pitch": 0.08,
 	},
-	# Rocket launch thump and explosion. Stand-ins built from the cannonball clip (pitched up
-	# for the launch, down for the boom) until there are dedicated rocket sounds.
 	"rocket_launch": {
-		"files": ["cannon_ball_hitting__#4-1791320349115.mp3"],
-		"rms": [-22.9], "target": -17.0, "max_voices": 2, "min_interval": 0.1, "chance": 1.0, "pitch": 0.05, "pitch_base": 1.6,
+		"files": ["Heavy_rocket_launch__#4-1791513024031.mp3"],
+		"rms": [-10.0], "target": -15.0, "max_voices": 2, "min_interval": 0.1, "chance": 1.0, "pitch": 0.05,
+	},
+	# Whoosh when a rocket comes close to the Hulk: the "incoming!" cue, and the near-miss sound.
+	"rocket_flyby": {
+		"files": ["Rocket_flying_past_t_#2-1791513065937.mp3"],
+		"rms": [-11.7], "target": -14.0, "max_voices": 2, "min_interval": 0.2, "chance": 1.0, "pitch": 0.06,
 	},
 	"rocket_boom": {
-		"files": ["cannon_ball_hitting__#4-1791320349115.mp3"],
-		"rms": [-22.9], "target": -8.0, "max_voices": 3, "min_interval": 0.05, "chance": 1.0, "pitch": 0.05, "pitch_base": 0.7,
+		"files": ["violent_explosion_#3-1791513419677.mp3"],
+		"rms": [-6.8], "target": -8.0, "max_voices": 3, "min_interval": 0.05, "chance": 1.0, "pitch": 0.05,
 	},
 	"splat": {
 		"files": ["a_overripe_orange_hi_#1-1791320405861.mp3", "a_rotten_melon_impac_#4-1791320514594.mp3", "Ripe_watermelon_spla_#4-1791320742459.mp3"],
@@ -61,11 +68,12 @@ var groups := {
 		"files": ["a_man_yelping_#1-1791320659837.mp3", "a_man_yelping_#4-1791320668270.mp3", "a_woman_yelping_#1-1791320682536.mp3", "a_woman_yelping_#2-1791320687537.mp3"],
 		"rms": [-10.4, -17.2, -8.9, -11.1], "target": -20.0, "max_voices": 2, "min_interval": 0.12, "chance": 0.4, "pitch": 0.1,
 	},
-	# Placeholder until there's a real sword-slice sound: the thudding punch pitched up into a
-	# sharper smack. Swap "files" (and re-measure "rms") when one exists.
+	# The ninja's blade landing. The file is a sharp chop (0-0.42 s) then a slow swelling
+	# whoosh (0.9-1.65 s); a hit only wants the chop.
 	"ninja_hit": {
-		"files": ["Heavy_thudding_punch_#4-1791320271989.mp3"],
-		"rms": [-9.1], "target": -13.0, "max_voices": 2, "min_interval": 0.08, "chance": 1.0, "pitch": 0.08, "pitch_base": 1.5,
+		"files": ["Heavy_sword_chopping_#2-1791513136725.mp3"],
+		"rms": [-13.7], "target": -12.0, "max_voices": 2, "min_interval": 0.08, "chance": 1.0, "pitch": 0.08,
+		"start": 0.0, "end": 0.42,
 	},
 }
 
@@ -75,6 +83,7 @@ var _gains: Dictionary = {}  # group -> Array[float]
 var _owner_group: Dictionary = {}  # player -> group it's playing
 var _last_start: Dictionary = {}  # group -> msec
 var _last_pick: Dictionary = {}  # group -> index
+var _play_id: Dictionary = {}  # player -> count of plays, so a slice's stop timer never cuts a newer sound
 
 
 func _ready() -> void:
@@ -119,9 +128,18 @@ func play(group: String, at: Vector3, volume_offset: float = 0.0) -> bool:
 	player.volume_db = _gains[group][i] + volume_offset
 	player.pitch_scale = g.get("pitch_base", 1.0) + randf_range(-g.pitch, g.pitch)
 	player.global_position = at
-	player.play()
+	var start: float = g.get("start", 0.0)
+	player.play(start)
 	_owner_group[player] = group
 	_last_start[group] = now
+	var id: int = _play_id.get(player, 0) + 1
+	_play_id[player] = id
+	if g.has("end"):
+		# Stop at the end of the slice (in real seconds: pitch changes playback speed).
+		var real_length: float = (float(g.end) - start) / player.pitch_scale
+		get_tree().create_timer(real_length, true, false, true).timeout.connect(func() -> void:
+			if _play_id.get(player) == id:
+				player.stop())
 	return true
 
 

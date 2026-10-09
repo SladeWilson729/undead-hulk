@@ -127,6 +127,7 @@ func _on_ninja_struck(at: Vector3, damage: int) -> void:
 func _on_rocket_fired(rocket: Rocket) -> void:
 	sfx.play("rocket_launch", rocket.global_position)
 	camera_rig.add_shake(rocket_launch_shake)
+	rocket.flew_close.connect(func(at: Vector3) -> void: sfx.play("rocket_flyby", at))
 	rocket.exploded.connect(func(at: Vector3, hulk_damage: int) -> void:
 		sfx.play("rocket_boom", at)
 		camera_rig.add_shake(rocket_boom_shake + (rocket_hit_shake if hulk_damage > 0 else 0.0))

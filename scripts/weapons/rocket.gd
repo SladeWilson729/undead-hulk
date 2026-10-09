@@ -13,18 +13,24 @@ extends Node3D
 ## Collision mask: world (1) + Hulk (2) + soldiers (4). The shooter is excluded.
 
 signal exploded(at: Vector3, hulk_damage: int)
+## The rocket came within flyby_distance of the Hulk (once per rocket). Main plays the whoosh.
+signal flew_close(at: Vector3)
 
 @export var speed: float = 18.0
 @export var max_life: float = 3.0
 @export var blast_radius: float = 3.5
 @export var max_damage: int = 14
 @export var min_damage: int = 4
+## Within this distance (m) of the Hulk's chest, the rocket whooshes (flew_close). At 18 m/s,
+## 6 m gives about a third of a second of warning before a direct hit.
+@export var flyby_distance: float = 6.0
 ## Launch speed (m/s) given to soldiers caught in the blast, at the centre.
 @export var blast_launch: float = 12.0
 
 var shooter: Node3D
 var _life: float = 0.0
 var _done: bool = false
+var _whooshed: bool = false
 var _query := PhysicsRayQueryParameters3D.new()
 var _exhaust: MeshInstance3D
 var _trail: CPUParticles3D
@@ -130,6 +136,11 @@ func _physics_process(delta: float) -> void:
 		_explode(hit.position)
 		return
 	global_position = to
+	if not _whooshed:
+		var hulk := get_tree().get_first_node_in_group("player") as Node3D
+		if hulk and global_position.distance_to(hulk.global_position + Vector3.UP * 1.5) <= flyby_distance:
+			_whooshed = true
+			flew_close.emit(global_position)
 	if _life >= max_life:
 		_explode(global_position)
 
