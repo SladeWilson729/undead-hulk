@@ -89,7 +89,7 @@ func _build_model() -> void:
 
 func _physics_process(delta: float) -> void:
 	if global_position.y < -10.0:
-		kill()
+		kill(Vector3.ZERO, KillCause.FELL)
 		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -226,18 +226,18 @@ func _animate() -> void:
 
 ## Dies like any soldier, but first the rig lets go (the ragdoll needs the bones) and the
 ## launcher drops as a loose prop.
-func kill(launch_velocity: Vector3 = Vector3.ZERO) -> void:
+func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
 	if not is_in_group("enemies"):
 		return
 	_release_gear(launch_velocity)
-	super.kill(launch_velocity)
+	super.kill(launch_velocity, cause)
 
 
-func pin_to(carrier: Node3D) -> Node3D:
+func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:
 	if not is_in_group("enemies"):
 		return null
 	_release_gear(Vector3.ZERO)
-	return super.pin_to(carrier)
+	return super.pin_to(carrier, cause)
 
 
 func _release_gear(launch_velocity: Vector3) -> void:

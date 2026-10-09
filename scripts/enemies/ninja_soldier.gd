@@ -147,7 +147,7 @@ func _add_katana(sk: Skeleton3D, side: String) -> void:
 
 func _physics_process(delta: float) -> void:
 	if global_position.y < -10.0:
-		kill()
+		kill(Vector3.ZERO, KillCause.FELL)
 		return
 	if target == null or target.health.is_dead:
 		target = null
@@ -294,11 +294,11 @@ func _set_mode(m: Mode, timer: float = 0.0) -> void:
 	_mode_timer = timer
 
 
-func kill(launch_velocity: Vector3 = Vector3.ZERO) -> void:
+func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
 	_end_pounce()
-	super.kill(launch_velocity)
+	super.kill(launch_velocity, cause)
 
 
-func pin_to(carrier: Node3D) -> Node3D:
+func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:
 	_end_pounce()
-	return super.pin_to(carrier)
+	return super.pin_to(carrier, cause)

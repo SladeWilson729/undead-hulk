@@ -144,11 +144,11 @@ func _sweep_soldiers(speed: float) -> void:
 			continue
 		if speed >= pin_speed and _pinned.size() < max_pinned:
 			var mat := human.gib_material
-			var visual := human.pin_to(self)
+			var visual := human.pin_to(self, KillCause.CRUSHED)
 			if visual:
 				_pinned.append({"visual": visual, "material": mat})
 		else:
-			human.kill(linear_velocity * 0.7 + Vector3.UP * 6.0)
+			human.kill(linear_velocity * 0.7 + Vector3.UP * 6.0, KillCause.CRUSHED)
 
 
 ## Hard stop: everyone riding the car bursts. One big shake, one "CRUNCH!".

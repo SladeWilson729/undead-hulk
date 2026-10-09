@@ -15,6 +15,8 @@ extends Node
 signal punched(hits: int)
 ## Emitted when a punch starts (the click). Voice efforts hang off this, not the impact.
 signal swung
+## Dead bodies popped in midair by this punch (style points).
+signal juggled(count: int)
 
 enum Phase { READY, WINDUP, RECOVERY }
 
@@ -102,8 +104,10 @@ func _strike() -> void:
 		var dir := (forward + away).normalized()
 		var launch := dir * randf_range(launch_speed_min, launch_speed_max)
 		launch.y = randf_range(launch_lift_min, launch_lift_max)
-		human.kill(launch)
+		human.kill(launch, KillCause.SMASHED)
 	var juggles := _juggle_airborne_bodies()
+	if juggles > 0:
+		juggled.emit(juggles)
 	_smash_breakables()
 	punched.emit(targets.size() + juggles)
 

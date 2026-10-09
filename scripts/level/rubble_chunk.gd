@@ -54,7 +54,7 @@ func _on_body_entered(body: Node) -> void:
 	if human == null or _prev_velocity.length() < kill_speed:
 		return
 	# Carry the brick's momentum into the corpse, with a little pop so it reads as a hit.
-	human.kill(_prev_velocity * 0.9 + Vector3.UP * 3.0)
+	human.kill(_prev_velocity * 0.9 + Vector3.UP * 3.0, KillCause.BURIED)
 
 
 ## Settled: becomes scenery. Frozen with collision off, so a pile of rubble costs nothing.

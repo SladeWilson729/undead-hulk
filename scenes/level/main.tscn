@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://dq87aj7mtfefm" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
 [ext_resource type="AudioStream" uid="uid://begr70ia5t1ay" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
 [ext_resource type="Script" path="res://scripts/audio/sfx.gd" id="12_sfx"]
+[ext_resource type="Script" path="res://scripts/game/run.gd" id="13_run"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -31,6 +32,9 @@ light_energy = 1.2
 shadow_enabled = true
 
 [node name="Level" parent="." unique_id=1103270397 instance=ExtResource("5_level")]
+
+[node name="Run" type="Node" parent="."]
+script = ExtResource("13_run")
 
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
 

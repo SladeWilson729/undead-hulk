@@ -427,6 +427,36 @@ A rendered frame matches the old view. Steps 4-13, 15, 16, 18 and 19 pass. Pre-e
 
 Step 14's long-standing failure was the test: it fired a ground pound mid-punch, which the game correctly refuses. With that fixed, the test exposed the real priority problem above. Step 14 now passes 3 of 3, with a new check that the throw line cuts off the lift line. Step 15 expects 17 clips. Steps 12, 13, 16, 18, 19 and 20 pass.
 
+**Roguelike plan (locked 2026-10-08).**
+- A run is 14 standard waves. On wave 15 the wave dies, the game fakes a win, then the boss arrives. Kill the boss to win.
+- Grunts stay one-hit kills. The rocket soldier and ninja get 2-4 hits. The boss has a health pool.
+- After each wave you pick 1 of 3 augments.
+- Build order: kill causes and the Run record (done), then the run summary screen with New Run (replaces "Press R to rise again"), then the augment system with 6-8 cheap augments, then the expensive augments (new attacks, helper), then the boss.
+
+**Step 16 (kill causes + Run record), 2026-10-08.** The base the summary and augments sit on.
+- `scripts/game/kill_cause.gd` (`KillCause`) lists how a soldier can die, with summary names: Smashed (punch), Stomped (pound), Eaten, Crushed (car hit or pin), Buried (rubble), Friendly Fire (rocket blast), Fell (off the level).
+- `Human.kill()` and `pin_to()` now take a cause and set `Human.death_cause` before `died` fires. Every call site passes the right one; the ninja and rocket soldier pass it through.
+- `scripts/game/run.gd` (`Run`), a node in main.tscn, records the run:
+  - kills by cause, specials killed by name, juggles, wall splats, waves cleared
+  - augments (an empty list for now) and the score
+  - `summary()` returns everything the end screen will show
+- The spawner gained `human_died(human)`. Punch and pound gained `juggled(count)`. Main wires those, plus the death director's `splatted` and the wave signals, into the Run.
+- Specials carry `kind_name` and `bounty` (Human exports): the rocket soldier and ninja are each worth 150 extra.
+- **Score:**
+  - Kill points by cause: Smashed 10, Stomped 10, Fell 15, Crushed 20, Buried 25, Eaten 30, Friendly Fire 35.
+  - Kill points are multiplied by the wave: x1.0 at wave 1, +0.1 per wave.
+  - Bonuses: juggle 40, wall splat 15, wave clear 100 x wave number.
+  - All of it is tunable on the Run node.
+- The HUD shows SCORE next to KILLS.
+
+**Tests:** step 22 passed all 19 checks. It covers:
+- each cause, produced by the real move where practical: punch, pound, eat, car sweep, rubble hit, rocket blast, falling off
+- the bounty and the specials list
+- juggle and splat points, the wave multiplier, the wave clear bonus
+- summary order and totals; the HUD score
+
+Steps 4-21 pass (step 7 now expects the score on the HUD line). Step 3 is still the known flaky swarm count.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -469,3 +499,5 @@ Step 14's long-standing failure was the test: it fired a ground pound mid-punch,
 - **Spawner > Spawn points:** spawn_spread. The markers themselves live in the level scene (`Level/SpawnPoints`)
 - **Main > Ninja:** ninja_hit_shake, ninja_flip_shake, ninja_flip_hit_stop
 - **AfterimageTrail (created in code by the ninja, so edit the defaults at the top of `scripts/vfx/afterimage_trail.gd`):** interval, lifetime, min_speed, smoke_color, rim_color, base_alpha, grow, enabled. Shader extras in `shaders/afterimage.gdshader`: rim_power, smoke_scale, fade_in
+- **Run (main.tscn):** points_smashed / stomped / eaten / crushed / buried / friendly_fire / fell / other, juggle_points, splat_points, wave_clear_points, wave_multiplier_step
+- **Score on enemies (Human exports, set per scene):** kind_name, bounty

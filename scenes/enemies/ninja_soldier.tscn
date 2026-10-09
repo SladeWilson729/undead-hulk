@@ -10,6 +10,8 @@ height = 1.7
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_ninja")
+kind_name = "Ninja"
+bounty = 150
 move_speed = 7.5
 speed_variance = 0.05
 

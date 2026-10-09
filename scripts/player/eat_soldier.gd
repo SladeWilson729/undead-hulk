@@ -110,7 +110,7 @@ func start() -> bool:
 		return false
 	_victim_material = target.gib_material
 	# Caught: counts as a kill now (he yelps), and his body is ours to move.
-	_victim = target.pin_to(hulk.get_parent())
+	_victim = target.pin_to(hulk.get_parent(), KillCause.EATEN)
 	if _victim == null:
 		return false
 	_victim.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF

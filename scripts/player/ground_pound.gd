@@ -14,6 +14,8 @@ extends Node
 signal pounded(kills: int)
 ## Emitted at takeoff.
 signal leaped
+## Dead bodies popped in midair by the shockwave (style points).
+signal juggled(count: int)
 
 enum Phase { READY, RISING, SLAMMING, COOLDOWN }
 
@@ -119,7 +121,7 @@ func _impact() -> void:
 			var t := dist / kill_radius  # 0 at the center, 1 at the edge
 			var launch := away * lerpf(outward_center, outward_edge, t) * randf_range(0.85, 1.15)
 			launch.y = lerpf(lift_center, lift_edge, t) * randf_range(0.9, 1.1)
-			human.kill(launch)
+			human.kill(launch, KillCause.STOMPED)
 			kills += 1
 		else:
 			human.shove(away * shove_speed)
@@ -127,11 +129,15 @@ func _impact() -> void:
 	# Bodies still in the air from an earlier hit get blown apart by the shockwave.
 	var director := get_tree().get_first_node_in_group("death_director") as DeathDirector
 	if director:
+		var popped := 0
 		for corpse in director.airborne_corpses():
 			var c: Vector3 = corpse.get_center()
 			if Vector2(c.x - center.x, c.z - center.z).length() <= kill_radius and c.y <= 6.0:
 				corpse.explode()
 				kills += 1
+				popped += 1
+		if popped > 0:
+			juggled.emit(popped)
 
 	# Pillars in the kill radius burst outward. Less sideways speed than a punch, the
 	# hit lands low (it's a shockwave along the floor), so the tops topple and rain down.

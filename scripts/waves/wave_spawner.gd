@@ -13,6 +13,8 @@ signal wave_cleared(wave: int)
 signal kills_changed(total: int)
 ## One soldier died, and where. For effects that care about position (death yelps).
 signal human_killed(position: Vector3)
+## Same moment, with the soldier himself (for the Run record: cause, bounty).
+signal human_died(human: Human)
 ## A special enemy (rocket soldier, ninja) entered the field. Main hooks up its sounds and shake.
 signal special_spawned(human: Human)
 
@@ -205,6 +207,7 @@ func _on_human_died(human: Human) -> void:
 	alive -= 1
 	kills += 1
 	kills_changed.emit(kills)
+	human_died.emit(human)
 	human_killed.emit(human.global_position)
 	_check_cleared()
 

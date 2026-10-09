@@ -162,7 +162,7 @@ func _explode(at: Vector3) -> void:
 		if offset.length() <= blast_radius:
 			var t := offset.length() / blast_radius
 			var away := Vector3(offset.x, 0.0, offset.z).normalized() if Vector2(offset.x, offset.z).length() > 0.05 else Vector3.FORWARD
-			human.kill(away * blast_launch * (1.0 - t * 0.5) + Vector3.UP * lerpf(10.0, 5.0, t))
+			human.kill(away * blast_launch * (1.0 - t * 0.5) + Vector3.UP * lerpf(10.0, 5.0, t), KillCause.FRIENDLY_FIRE)
 	var director := get_tree().get_first_node_in_group("death_director") as DeathDirector
 	if director:
 		for corpse in director.airborne_corpses():

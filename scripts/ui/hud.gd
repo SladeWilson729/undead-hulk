@@ -20,6 +20,7 @@ extends CanvasLayer
 var _pound: GroundPound
 var _eat: EatSoldier
 var _spawner: WaveSpawner
+var _run: Run
 var _banner_tween: Tween
 
 
@@ -38,10 +39,22 @@ func bind_eat(eat: EatSoldier) -> void:
 	_eat = eat
 
 
+## Score sits next to the kill count.
+func bind_run(run: Run) -> void:
+	_run = run
+	run.score_changed.connect(func(_score: int) -> void: _update_kills())
+	_update_kills()
+
+
+func _update_kills() -> void:
+	var k := _spawner.kills if _spawner else 0
+	kill_label.text = "KILLS  %d    SCORE  %d" % [k, _run.score] if _run else "KILLS  %d" % k
+
+
 func bind_spawner(spawner: WaveSpawner) -> void:
 	_spawner = spawner
 	spawner.wave_started.connect(_on_wave_started)
-	spawner.kills_changed.connect(func(total: int) -> void: kill_label.text = "KILLS  %d" % total)
+	spawner.kills_changed.connect(func(_total: int) -> void: _update_kills())
 	wave_label.text = "GET READY"
 	kill_label.text = "KILLS  0"
 	banner.visible = false

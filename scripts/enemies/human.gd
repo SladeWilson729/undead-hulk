@@ -59,6 +59,12 @@ const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 @export var punch_loop_end: float = 1.55
 @export var anim_blend: float = 0.15
 
+@export_group("Score")
+## Name on the run summary (special enemies are listed by name).
+@export var kind_name: String = "Soldier"
+## Extra score for killing this one. 0 = regular grunt; specials set it in their scene.
+@export var bounty: int = 0
+
 @export_group("Painterly look")
 @export var painterly_enabled: bool = true
 @export var paint_style: ShaderMaterial = preload("res://assets/materials/painterly/soldier_character.tres")
@@ -77,6 +83,8 @@ var variant: Dictionary = {}
 var model: Node3D
 ## Uniform-colored material for this soldier's gibs when he explodes.
 var gib_material: Material
+## How he died (a KillCause), set just before `died` fires. The Run record reads it.
+var death_cause: int = KillCause.UNKNOWN
 
 var _ap: AnimationPlayer
 var _avoid_timer: float = 0.0
@@ -109,7 +117,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	# Safety net: a human that somehow leaves the bridge alive would block "wave cleared" forever.
 	if global_position.y < -10.0:
-		kill()
+		kill(Vector3.ZERO, KillCause.FELL)
 		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -268,10 +276,11 @@ func shove(push_velocity: Vector3) -> void:
 ## Hit by a thrown car: dies (counts as a kill) but his body rides the car, stuck to it.
 ## Returns the visual so the car can crush it against a wall or drop it later.
 ## Returns null if he was already dead.
-func pin_to(carrier: Node3D) -> Node3D:
+func pin_to(carrier: Node3D, cause: int = KillCause.UNKNOWN) -> Node3D:
 	if _dead:
 		return null
 	_dead = true
+	death_cause = cause
 	remove_from_group("enemies")
 	var pinned := visual
 	pinned.reparent(carrier, true)
@@ -286,10 +295,11 @@ func pin_to(carrier: Node3D) -> Node3D:
 
 ## One-hit death. Hands off to the level's DeathDirector, which picks ragdoll, cheap body,
 ## or explosion. The living human is removed either way.
-func kill(launch_velocity: Vector3 = Vector3.ZERO) -> void:
+func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOWN) -> void:
 	if _dead:
 		return
 	_dead = true
+	death_cause = cause
 	# Leave the group NOW, not at end of frame, so a second attack this same frame
 	# (or the Hulk's shove) can't hit a human that is already dead.
 	remove_from_group("enemies")

@@ -48,6 +48,7 @@ extends Node3D
 @onready var spawner: WaveSpawner = $Spawner
 @onready var music: AudioStreamPlayer = $Music
 @onready var sfx: Sfx = $Sfx
+@onready var run: Run = $Run
 
 var _hit_stop_token: int = 0
 
@@ -76,6 +77,14 @@ func _ready() -> void:
 	deaths.exploded.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
 	deaths.splatted.connect(func(pos: Vector3) -> void: sfx.play("splat", pos))
 	spawner.special_spawned.connect(_on_special_spawned)
+	# The run record: every kill (with how it happened), style moves, waves.
+	spawner.human_died.connect(run.record_kill)
+	spawner.wave_started.connect(func(wave: int, _size: int) -> void: run.wave = wave)
+	spawner.wave_cleared.connect(run.record_wave_cleared)
+	hulk.punch.juggled.connect(run.record_juggles)
+	hulk.pound.juggled.connect(run.record_juggles)
+	deaths.splatted.connect(func(_pos: Vector3) -> void: run.record_splat())
+	hud.bind_run(run)
 	spawner.human_killed.connect(func(pos: Vector3) -> void: sfx.play("yelp", pos + Vector3.UP * 1.5))
 	# Victory roar after each cleared wave; the next wave cuts it if it's still going.
 	spawner.wave_cleared.connect(func(_wave: int) -> void: hulk.animator.queue_victory())
