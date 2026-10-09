@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bt2p60f74plb2"
+path="res://.godot/imported/truck_engine_running_#2-1791518785681.mp3-0e755b7b7d78b894d503bbbf7fbc5dab.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/boss-battle-sounds/truck_engine_running_#2-1791518785681.mp3"
+dest_files=["res://.godot/imported/truck_engine_running_#2-1791518785681.mp3-0e755b7b7d78b894d503bbbf7fbc5dab.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

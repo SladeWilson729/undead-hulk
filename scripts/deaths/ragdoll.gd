@@ -96,6 +96,19 @@ func is_airborne() -> bool:
 	return not _removed and not _sinking and get_center().y > AIRBORNE_HEIGHT
 
 
+func get_velocity() -> Vector3:
+	return torso.linear_velocity if torso else Vector3.ZERO
+
+
+## Glitter Bomb: the body bursts into confetti instead of gore.
+func confetti() -> void:
+	if _removed:
+		return
+	if director:
+		director.confetti_at(get_center(), get_velocity())
+	remove_now()
+
+
 ## Juggle hit: blow the body into gibs.
 func explode() -> void:
 	if _removed:

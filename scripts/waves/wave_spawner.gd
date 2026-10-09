@@ -15,6 +15,8 @@ signal kills_changed(total: int)
 signal human_killed(position: Vector3)
 ## Same moment, with the soldier himself (for the Run record: cause, bounty).
 signal human_died(human: Human)
+## A soldier just entered the field (any kind). Augments dress him (Bobbleheads).
+signal human_spawned(human: Human)
 ## A special enemy (rocket soldier, ninja) entered the field. Main hooks up its sounds and shake.
 signal special_spawned(human: Human)
 
@@ -151,6 +153,7 @@ func spawn_one(scene: PackedScene = null) -> Human:
 	human.reset_physics_interpolation()
 	human.died.connect(_on_human_died)
 	alive += 1
+	human_spawned.emit(human)
 	return human
 
 

@@ -13,17 +13,21 @@ enum {
 	BURIED,         # Flying rubble from a smashed pillar.
 	FRIENDLY_FIRE,  # Caught in his own side's rocket blast.
 	FELL,           # Knocked off the level.
+	GLITTER_BOMBED, # Hit by a flying body with the Glitter Bomb augment.
+	TACKLED,        # Run down by the Foolsball Helmet charge.
 }
 
 ## Summary-screen names, in the order the summary lists them.
 const LABELS := {
 	SMASHED: "Smashed",
 	STOMPED: "Stomped",
+	TACKLED: "Tackled",
 	EATEN: "Eaten",
 	CRUSHED: "Crushed",
 	BURIED: "Buried",
 	FRIENDLY_FIRE: "Friendly Fire",
 	FELL: "Fell",
+	GLITTER_BOMBED: "Glitter Bombed",
 	UNKNOWN: "Other",
 }
 

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Augment" format=3]
+
+[ext_resource type="Script" path="res://scripts/game/augment.gd" id="1_aug"]
+
+[resource]
+script = ExtResource("1_aug")
+id = &"foolsball"
+display_name = "Foolsball Helmet"
+rarity = 2
+category = "Attack"
+description = "SHIFT: lower your head and charge 8 m toward the cursor. Everyone in the way gets tackled into next week. Hit a wall and see stars. 6 s cooldown."
+max_stacks = 1

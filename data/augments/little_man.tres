@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Augment" format=3]
+
+[ext_resource type="Script" path="res://scripts/game/augment.gd" id="1_aug"]
+
+[resource]
+script = ExtResource("1_aug")
+id = &"little_man"
+display_name = "Little Man No Hurt Hulk"
+rarity = 0
+category = "Stat"
+description = "+30 max HP, healed right away. Every extra stack adds +20 more."
+max_stacks = 0

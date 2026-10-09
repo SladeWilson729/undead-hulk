@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dgpxvnb44rnfd"
+path="res://.godot/imported/eat_1.mp3-62b603ee5f79b19a7f5f0a8bf7ab3c16.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/eat_1.mp3"
+dest_files=["res://.godot/imported/eat_1.mp3-62b603ee5f79b19a7f5f0a8bf7ab3c16.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

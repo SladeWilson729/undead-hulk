@@ -19,15 +19,20 @@ extends CanvasLayer
 
 var _pound: GroundPound
 var _eat: EatSoldier
+var _charge: FoolsballCharge
+## Made on demand: only shows once Foolsball Helmet is picked.
+var _charge_label: Label
 var _spawner: WaveSpawner
 var _run: Run
 var _banner_tween: Tween
 var _ended: bool = false
 ## The run summary once it's up (null before that).
 var end_popup: RunEndPopup
+var _health: Health
 
 
 func bind(health: Health) -> void:
+	_health = health
 	health.health_changed.connect(_on_health_changed)
 	health.died.connect(_on_died)
 	_on_health_changed(health.current, health.max_health)
@@ -40,6 +45,16 @@ func bind_pound(pound: GroundPound) -> void:
 
 func bind_eat(eat: EatSoldier) -> void:
 	_eat = eat
+
+
+func bind_charge(charge: FoolsballCharge) -> void:
+	_charge = charge
+	# Same look as the EAT line, right under it.
+	_charge_label = eat_label.duplicate() as Label
+	_charge_label.name = "ChargeLabel"
+	_charge_label.unique_name_in_owner = false
+	_charge_label.visible = false
+	eat_label.add_sibling(_charge_label)
 
 
 ## Score sits next to the kill count.
@@ -68,6 +83,7 @@ func _process(_delta: float) -> void:
 		return
 	_update_break_banner()
 	_update_eat_label()
+	_update_charge_label()
 	if _pound == null:
 		return
 	if _pound.phase == GroundPound.Phase.COOLDOWN:
@@ -92,8 +108,30 @@ func _update_eat_label() -> void:
 		eat_label.modulate = Color(0.5, 1.0, 0.45)
 
 
+func _update_charge_label() -> void:
+	if _charge == null or _charge_label == null:
+		return
+	_charge_label.visible = _charge.is_unlocked()
+	if not _charge_label.visible:
+		return
+	match _charge.phase:
+		FoolsballCharge.Phase.READY:
+			_charge_label.text = "CHARGE  READY"
+			_charge_label.modulate = Color(0.45, 0.8, 1.0)
+		FoolsballCharge.Phase.COOLDOWN:
+			_charge_label.text = "CHARGE  %.1f" % _charge.cooldown_remaining
+			_charge_label.modulate = Color(0.6, 0.6, 0.6)
+		FoolsballCharge.Phase.DAZED:
+			_charge_label.text = "CHARGE  BONK"
+			_charge_label.modulate = Color(1.0, 0.85, 0.3)
+		_:
+			_charge_label.text = "CHARGE  HUT HUT!"
+			_charge_label.modulate = Color(1.0, 0.55, 0.2)
+
+
 func _on_health_changed(current: int, maximum: int) -> void:
-	hp_label.text = "HP  %d / %d" % [current, maximum]
+	var shield := _health.shield if _health else 0
+	hp_label.text = "HP  %d / %d" % [current, maximum] + ("    SHIELD  %d" % shield if shield > 0 else "")
 	hp_bar.max_value = maximum
 	hp_bar.value = current
 

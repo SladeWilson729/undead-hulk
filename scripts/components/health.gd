@@ -11,6 +11,8 @@ signal died
 @export var max_health: int = 100
 
 var current: int
+## Damage soaked before HP is touched (Armor Up!). Refilled by AugmentSystem each wave.
+var shield: int = 0
 ## While true, take_damage() is ignored. Used for the ground pound's airborne window.
 var invulnerable: bool = false
 var is_dead: bool:
@@ -26,6 +28,13 @@ func take_damage(amount: int) -> void:
 	# Ignore hits after death so a swarm can't spam the died signal.
 	if is_dead or invulnerable or amount <= 0:
 		return
+	if shield > 0:
+		var soaked := mini(shield, amount)
+		shield -= soaked
+		amount -= soaked
+		if amount <= 0:
+			health_changed.emit(current, max_health)  # HUD shows the shield going down.
+			return
 	current = maxi(current - amount, 0)
 	health_changed.emit(current, max_health)
 	if current == 0:

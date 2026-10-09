@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dbiat765su62"
+path="res://.godot/imported/deacon_taunt_2.mp3-b7b43120b38d3e512df9b25a52995bbc.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_taunt_2.mp3"
+dest_files=["res://.godot/imported/deacon_taunt_2.mp3-b7b43120b38d3e512df9b25a52995bbc.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

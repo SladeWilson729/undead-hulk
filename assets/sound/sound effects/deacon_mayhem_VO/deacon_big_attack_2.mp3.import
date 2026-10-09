@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cwr50vpg0kovl"
+path="res://.godot/imported/deacon_big_attack_2.mp3-df6a7eb2c4945b781687c71df61c200f.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_big_attack_2.mp3"
+dest_files=["res://.godot/imported/deacon_big_attack_2.mp3-df6a7eb2c4945b781687c71df61c200f.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

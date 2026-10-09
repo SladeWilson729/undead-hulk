@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://j535q46wec4f"
+path="res://.godot/imported/deacon_victory_2.mp3-9de3b5a41501d14b055ba1f086dcb419.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_victory_2.mp3"
+dest_files=["res://.godot/imported/deacon_victory_2.mp3-9de3b5a41501d14b055ba1f086dcb419.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

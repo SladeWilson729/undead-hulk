@@ -30,6 +30,8 @@ extends CharacterBody3D
 @onready var animator: HulkAnimator = $Animator
 @onready var carry: CarryThrow = $CarryThrow
 @onready var eat: EatSoldier = $EatSoldier
+## Foolsball Helmet. Locked until the augment is picked.
+@onready var charge: FoolsballCharge = $FoolsballCharge
 ## The skinned mesh inside the imported model. Found by search so swapping the model file
 ## (new Mixamo export, different node names) doesn't break the hurt flash.
 @onready var body_mesh: MeshInstance3D = _find_mesh($Visual/Model)
@@ -71,6 +73,8 @@ func _physics_process(delta: float) -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	var rate := acceleration if move_dir != Vector3.ZERO else deceleration
 	horizontal = horizontal.move_toward(move_dir * move_speed * move_speed_multiplier, rate * delta)
+	if charge.is_driving():
+		horizontal = charge.drive_velocity()  # The charge owns movement: straight line, full speed.
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 
@@ -78,7 +82,7 @@ func _physics_process(delta: float) -> void:
 	_shove_humans()
 	animator.update_locomotion(Vector2(velocity.x, velocity.z).length())
 
-	if not health.is_dead:
+	if not health.is_dead and not charge.is_busy():
 		_update_aim(delta)
 
 
@@ -131,7 +135,7 @@ func face_point(point: Vector3, delta: float) -> void:
 ## True when no attack is in progress and we're alive. Attacks check this before starting,
 ## so a punch can't fire mid-pound and vice versa.
 func can_attack() -> bool:
-	return not health.is_dead and punch.phase == PunchAttack.Phase.READY and not pound.is_busy() and not carry.is_busy() and not eat.is_busy()
+	return not health.is_dead and punch.phase == PunchAttack.Phase.READY and not pound.is_busy() and not carry.is_busy() and not eat.is_busy() and not charge.is_busy()
 
 
 ## The Hulk does NOT collide with humans (collision mask = world only), so the swarm can never

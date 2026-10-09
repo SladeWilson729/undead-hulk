@@ -11,7 +11,7 @@ const DESIGN := Vector2(1080, 850)
 ## A full run: 14 standard waves, then wave 15 and the boss.
 const FINAL_WAVE := 15
 ## Kill rows, top to bottom. Must match KillCause.LABELS names.
-const CAUSE_ROWS := ["Smashed", "Stomped", "Eaten", "Crushed", "Buried", "Friendly Fire", "Fell"]
+const CAUSE_ROWS := ["Smashed", "Stomped", "Tackled", "Eaten", "Crushed", "Buried", "Friendly Fire", "Fell", "Glitter Bombed"]
 var sheet: Control
 var headline: SystemFont
 var body: SystemFont
@@ -127,19 +127,19 @@ func present(summary: Dictionary) -> void:
 		counts[entry[0]] = entry[1]
 	var names: Array = CAUSE_ROWS
 	for i in names.size():
-		var y := 413 + i * 32
+		var y := 413 + i * 26
 		if i % 2 == 0:
 			var strip := ColorRect.new()
 			strip.position = Vector2(59,y)
-			strip.size = Vector2(506,31)
+			strip.size = Vector2(506,25)
 			strip.color = Color(0.23,0.24,0.18,0.07)
 			strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			sheet.add_child(strip)
-		_text("%02d" % (i+1),Rect2(70,y+1,40,30),15,Color("797662"))
-		_text(names[i],Rect2(115,y-1,337,32),21)
-		_text(str(counts.get(names[i],0)),Rect2(454,y-2,94,32),23,INK,true,HORIZONTAL_ALIGNMENT_RIGHT)
+		_text("%02d" % (i+1),Rect2(70,y-1,40,26),14,Color("797662"))
+		_text(names[i],Rect2(115,y-3,337,28),19)
+		_text(str(counts.get(names[i],0)),Rect2(454,y-4,94,28),21,INK,true,HORIZONTAL_ALIGNMENT_RIGHT)
 	var extras := int(counts.get("Other",0))
-	_text("Other mishaps: %d" % extras if extras > 0 else "Every body tells a story. A short one.",Rect2(70,645,490,28),15,Color("66624f"))
+	_text("Other mishaps: %d" % extras if extras > 0 else "Every body tells a story. A short one.",Rect2(70,654,490,26),14,Color("66624f"))
 	var items := [["Kill points",data.get("kill_points",0)],["Special bounties",data.get("bounty_points",0)],["Style bonuses",data.get("style_points",0)],["Wave clears (%d)" % data.get("waves_cleared",0),data.get("wave_points",0)]]
 	for i in items.size():
 		_text(items[i][0],Rect2(622,414+i*34,273,32),19)

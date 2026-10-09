@@ -12,6 +12,8 @@ extends Node3D
 
 signal exploded(position: Vector3)
 signal splatted(position: Vector3)
+## A body (or a soldier) burst into confetti (Glitter Bomb augment).
+signal confettied(position: Vector3)
 
 @export_group("Budget")
 ## Max jointed ragdolls alive at once. Above this, deaths use the cheap single-body version.
@@ -112,7 +114,9 @@ func show_wall_comic(source: Node, contact: Vector3, normal: Vector3, speed: flo
 ## Ragdolls and cheap bodies take over the soldier's own model, so the corpse is the same
 ## soldier, in the same pose, as the one that just got hit.
 func spawn_death(human: Human, launch_velocity: Vector3) -> void:
-	if randf() < explode_chance:
+	if human.force_confetti:
+		confetti_at(human.global_position + Vector3.UP * 0.9, launch_velocity)
+	elif randf() < explode_chance:
 		explode_at(human.global_position + Vector3.UP * 0.9, launch_velocity, human.gib_material)
 	elif active_ragdolls < ragdoll_cap:
 		_spawn_ragdoll(human, launch_velocity)
@@ -183,6 +187,28 @@ func explode_at(center: Vector3, inherit_velocity: Vector3, uniform: Material) -
 	blood_burst(center, 45)
 	add_stain(center, randf_range(2.6, 3.2))
 	exploded.emit(center)
+
+
+## Party popper instead of gore: the Glitter Bomb augment.
+func confetti_at(center: Vector3, inherit_velocity: Vector3) -> void:
+	ConfettiBurst.spawn(self, center, inherit_velocity)
+	confettied.emit(center)
+
+
+## Bobbleheads head pop: a spray of blood and a couple of chunks from where the head was.
+func pop_head(at: Vector3, inherit_velocity: Vector3, uniform: Material) -> void:
+	blood_burst(at, 24)
+	var mats: Array[Material] = [_skin_mat, _blood_mat, uniform]
+	for i in mini(3, gib_cap - active_gibs):
+		var gib := Gib.create(randf_range(0.12, 0.22), mats[i % mats.size()])
+		add_child(gib)
+		var dir := Vector3(randf_range(-1, 1), randf_range(0.3, 1), randf_range(-1, 1)).normalized()
+		gib.global_position = at + dir * 0.15
+		gib.reset_physics_interpolation()
+		gib.linear_velocity = inherit_velocity * 0.4 + dir * randf_range(4.0, 8.0) + Vector3.UP * 4.0
+		gib.angular_velocity = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 15.0
+		active_gibs += 1
+		gib.tree_exiting.connect(func() -> void: active_gibs -= 1)
 
 
 ## Bodies still in the air: these are the ones a juggle hit can explode.

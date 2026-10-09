@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dpae1raxqybs8"
+path="res://.godot/imported/truck_revving,_and_a_#2-1791518756350.mp3-fd0619f5ee3bbc40a6dd53590c5955fb.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/boss-battle-sounds/truck_revving,_and_a_#2-1791518756350.mp3"
+dest_files=["res://.godot/imported/truck_revving,_and_a_#2-1791518756350.mp3-fd0619f5ee3bbc40a6dd53590c5955fb.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

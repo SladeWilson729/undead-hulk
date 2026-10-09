@@ -15,6 +15,12 @@ extends Node3D
 @export var ninja_flip_shake: float = 0.35
 @export var ninja_flip_hit_stop: float = 0.05
 
+@export_group("Foolsball charge")
+## Each soldier tackled kicks the camera a little; a wall kicks it a lot.
+@export var tackle_shake: float = 0.12
+@export var bonk_shake: float = 0.6
+@export var bonk_hit_stop: float = 0.08
+
 @export_group("Audio")
 ## Music volume (dB, on top of the Music bus) after the Hulk dies.
 @export var music_death_duck_db: float = -14.0
@@ -49,6 +55,7 @@ extends Node3D
 @onready var music: AudioStreamPlayer = $Music
 @onready var sfx: Sfx = $Sfx
 @onready var run: Run = $Run
+@onready var augments: AugmentSystem = $Augments
 
 var _hit_stop_token: int = 0
 
@@ -60,6 +67,14 @@ func _ready() -> void:
 	hulk.pound.pounded.connect(_on_pounded)
 	hud.bind_pound(hulk.pound)
 	hud.bind_eat(hulk.eat)
+	hud.bind_charge(hulk.charge)
+	hulk.charge.tackled.connect(func(at: Vector3) -> void:
+		sfx.play("punch_hit", at)
+		camera_rig.add_shake(tackle_shake))
+	hulk.charge.bonked.connect(func(at: Vector3) -> void:
+		sfx.play("pound_hit", at)
+		camera_rig.add_shake(bonk_shake)
+		hit_stop(bonk_hit_stop))
 	deaths.exploded.connect(func(_pos: Vector3) -> void: camera_rig.add_shake(explosion_shake))
 	hud.bind_spawner(spawner)
 	# The Hulk goes down: the music sinks with him.
@@ -85,10 +100,25 @@ func _ready() -> void:
 	hulk.pound.juggled.connect(run.record_juggles)
 	deaths.splatted.connect(func(_pos: Vector3) -> void: run.record_splat())
 	hud.bind_run(run)
+	# Augments: a pick after every cleared wave; refills and soldier dressing as waves run.
+	augments.hulk = hulk
+	augments.run = run
+	augments.deaths = deaths
+	spawner.human_spawned.connect(augments.dress)
+	spawner.wave_started.connect(func(_wave: int, _size: int) -> void: augments.on_wave_started())
+	spawner.wave_cleared.connect(_on_wave_cleared_pick)
 	spawner.human_killed.connect(func(pos: Vector3) -> void: sfx.play("yelp", pos + Vector3.UP * 1.5))
 	# Victory roar after each cleared wave; the next wave cuts it if it's still going.
 	spawner.wave_cleared.connect(func(_wave: int) -> void: hulk.animator.queue_victory())
 	spawner.wave_started.connect(func(_wave: int, _size: int) -> void: hulk.animator.cancel_victory())
+
+
+## After a wave clears (and the victory roar starts), pause for the augment pick.
+func _on_wave_cleared_pick(_wave: int) -> void:
+	await get_tree().create_timer(augments.pick_delay, false).timeout
+	if not is_inside_tree() or hulk.health.is_dead or run.ended:
+		return
+	augments.open_picker(hud)
 
 
 func _exit_tree() -> void:

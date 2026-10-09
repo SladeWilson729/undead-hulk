@@ -45,6 +45,19 @@ func is_airborne() -> bool:
 	return not _removed and global_position.y > AIRBORNE_HEIGHT
 
 
+func get_velocity() -> Vector3:
+	return linear_velocity
+
+
+## Glitter Bomb: the body bursts into confetti instead of gore.
+func confetti() -> void:
+	if _removed:
+		return
+	if director:
+		director.confetti_at(global_position, linear_velocity)
+	remove_now()
+
+
 func explode() -> void:
 	if _removed:
 		return

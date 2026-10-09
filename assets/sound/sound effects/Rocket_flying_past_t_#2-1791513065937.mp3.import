@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://gtp3eq0xnlja"
+path="res://.godot/imported/Rocket_flying_past_t_#2-1791513065937.mp3-3866fd745dfe17938b7cd4848683b423.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/Rocket_flying_past_t_#2-1791513065937.mp3"
+dest_files=["res://.godot/imported/Rocket_flying_past_t_#2-1791513065937.mp3-3866fd745dfe17938b7cd4848683b423.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

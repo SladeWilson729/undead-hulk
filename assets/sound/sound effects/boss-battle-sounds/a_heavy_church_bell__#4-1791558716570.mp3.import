@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dpc6h3onmhlko"
+path="res://.godot/imported/a_heavy_church_bell__#4-1791558716570.mp3-9e143002330cc6cb7156d6b32a3f4111.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/boss-battle-sounds/a_heavy_church_bell__#4-1791558716570.mp3"
+dest_files=["res://.godot/imported/a_heavy_church_bell__#4-1791558716570.mp3-9e143002330cc6cb7156d6b32a3f4111.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

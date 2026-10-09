@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/player/carry_throw.gd" id="7_carry"]
 [ext_resource type="Script" path="res://scripts/audio/hulk_voice.gd" id="8_voice"]
 [ext_resource type="Script" path="res://scripts/player/eat_soldier.gd" id="9_eat"]
+[ext_resource type="Script" path="res://scripts/player/foolsball_charge.gd" id="10_charge"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.9
@@ -49,3 +50,6 @@ script = ExtResource("9_eat")
 
 [node name="Voice" type="AudioStreamPlayer" parent="."]
 script = ExtResource("8_voice")
+
+[node name="FoolsballCharge" type="Node" parent="."]
+script = ExtResource("10_charge")

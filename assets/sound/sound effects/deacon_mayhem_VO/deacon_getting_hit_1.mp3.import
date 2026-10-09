@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cccqglh2b7vtw"
+path="res://.godot/imported/deacon_getting_hit_1.mp3-91f6dec378513301d3152ec034e5b65d.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_getting_hit_1.mp3"
+dest_files=["res://.godot/imported/deacon_getting_hit_1.mp3-91f6dec378513301d3152ec034e5b65d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

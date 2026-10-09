@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://txbrmhnf2ss8"
+path="res://.godot/imported/deacon_defeat_2.mp3-0fea573e9f87bbc42b38731725c74cdb.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_defeat_2.mp3"
+dest_files=["res://.godot/imported/deacon_defeat_2.mp3-0fea573e9f87bbc42b38731725c74cdb.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

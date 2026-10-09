@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Augment" format=3]
+
+[ext_resource type="Script" path="res://scripts/game/augment.gd" id="1_aug"]
+
+[resource]
+script = ExtResource("1_aug")
+id = &"me_strong"
+display_name = "Me Strong!"
+rarity = 0
+category = "Attack"
+description = "Each punch hits 2 more soldiers."
+max_stacks = 3

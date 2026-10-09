@@ -178,3 +178,144 @@ static func _world_one(sk: Skeleton3D, b: int, local: Array[Quaternion], world: 
 	else:
 		world[b] = space * local[b]
 	done[b] = true
+
+
+# ---------------------------------------------------------------------------------------------
+# Cross-rig retargeting (other naming schemes, e.g. ActorCore / Character Creator "CC_Base_").
+# ---------------------------------------------------------------------------------------------
+
+## ActorCore / Character Creator 3+ bone names -> Mixamo names. Twist, share, face and toe
+## bones have no Mixamo equivalent and are skipped (their parents carry the motion).
+static func actorcore_to_mixamo() -> Dictionary:
+	var m := {
+		"mixamorig_Hips": "CC_Base_Pelvis",
+		"mixamorig_Spine": "CC_Base_Waist",
+		"mixamorig_Spine1": "CC_Base_Spine01",
+		"mixamorig_Spine2": "CC_Base_Spine02",
+		"mixamorig_Neck": "CC_Base_NeckTwist01",
+		"mixamorig_Head": "CC_Base_Head",
+	}
+	for side in [["Left", "L"], ["Right", "R"]]:
+		var mx: String = side[0]
+		var cc: String = side[1]
+		m["mixamorig_%sShoulder" % mx] = "CC_Base_%s_Clavicle" % cc
+		m["mixamorig_%sArm" % mx] = "CC_Base_%s_Upperarm" % cc
+		m["mixamorig_%sForeArm" % mx] = "CC_Base_%s_Forearm" % cc
+		m["mixamorig_%sHand" % mx] = "CC_Base_%s_Hand" % cc
+		m["mixamorig_%sUpLeg" % mx] = "CC_Base_%s_Thigh" % cc
+		m["mixamorig_%sLeg" % mx] = "CC_Base_%s_Calf" % cc
+		m["mixamorig_%sFoot" % mx] = "CC_Base_%s_Foot" % cc
+		m["mixamorig_%sToeBase" % mx] = "CC_Base_%s_ToeBase" % cc
+		for f in [["Thumb", "Thumb"], ["Index", "Index"], ["Middle", "Mid"], ["Ring", "Ring"], ["Pinky", "Pinky"]]:
+			for i in [1, 2, 3]:
+				m["mixamorig_%sHand%s%d" % [mx, f[0], i]] = "CC_Base_%s_%s%d" % [cc, f[1], i]
+	return m
+
+
+## Like retarget(), but for a source rig with different bone names AND any bone layout or
+## axis convention: instead of reading keyframes, it PLAYS the clip on the source skeleton and
+## reads the final world pose of each bone every frame. Root motion is dropped (the Hulk's
+## CharacterBody owns movement); hips height is scaled by leg length and grounded to the toes.
+##
+## src_model must be inside the scene tree (to pose its skeleton). name_map: dst bone ->
+## src bone. src_hips: the source bone whose height drives the hips (CC rigs: "CC_Base_Hip").
+static func retarget_sampled(src_model: Node3D, clip: StringName, dst_model: Node3D, name_map: Dictionary,
+		src_hips: String, fps: float = 30.0) -> Animation:
+	var src: Skeleton3D = SoldierVariants.find_skeleton(src_model)
+	var dst: Skeleton3D = SoldierVariants.find_skeleton(dst_model)
+	var player := SoldierVariants.find_player(src_model)
+	var src_anim := player.get_animation(clip)
+	var dst_prefix := String(dst_model.get_path_to(dst)) + ":"
+	var src_space := _space(src_model, src)
+	var dst_space := _space(dst_model, dst)
+	var src_xf := _space_xf(src_model, src)
+
+	var n := dst.get_bone_count()
+	var map: Array[int] = []
+	for b in n:
+		map.append(src.find_bone(name_map.get(dst.get_bone_name(b), "")))
+	# World rest rotations: source straight from the skeleton, destination from rest chain.
+	var src_rest_world: Array[Quaternion] = []
+	for sb in src.get_bone_count():
+		src_rest_world.append((src_space * src.get_bone_global_rest(sb).basis.get_rotation_quaternion()).normalized())
+	var dst_rest_world := _world_rest(dst, dst_space)
+
+	var out := Animation.new()
+	out.length = src_anim.length
+	out.loop_mode = src_anim.loop_mode
+	var tracks: Array[int] = []
+	for b in n:
+		if map[b] < 0:
+			tracks.append(-1)
+			continue
+		var t := out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(t, NodePath(dst_prefix + dst.get_bone_name(b)))
+		tracks.append(t)
+	var hips_dst := dst.find_bone("mixamorig_Hips")
+	var hips_src := src.find_bone(src_hips)
+	var hips_track := out.add_track(Animation.TYPE_POSITION_3D)
+	out.track_set_path(hips_track, NodePath(dst_prefix + "mixamorig_Hips"))
+	var src_leg := _chain_length(src, [name_map["mixamorig_LeftLeg"], name_map["mixamorig_LeftFoot"], name_map["mixamorig_LeftToeBase"]])
+	var hips_ratio := _leg_length(dst) / maxf(src_leg, 0.0001)
+	# Source ground: its toes at rest (the rig's root may sit at any height).
+	var src_ground := minf((src_xf * src.get_bone_global_rest(src.find_bone(name_map["mixamorig_LeftToeBase"]))).origin.y,
+		(src_xf * src.get_bone_global_rest(src.find_bone(name_map["mixamorig_RightToeBase"]))).origin.y)
+
+	player.play(clip)
+	player.pause()
+	var frames := maxi(int(ceil(src_anim.length * fps)), 1)
+	var lowest_toe := INF
+	var toes: Array[int] = [dst.find_bone("mixamorig_LeftToeBase"), dst.find_bone("mixamorig_RightToeBase")]
+	for f in frames + 1:
+		var time := minf(f / fps, src_anim.length)
+		player.seek(time, true)
+		src.force_update_all_bone_transforms()
+		var src_world: Array[Quaternion] = []
+		for sb in src.get_bone_count():
+			src_world.append((src_space * src.get_bone_global_pose(sb).basis.get_rotation_quaternion()).normalized())
+		var dst_world: Array[Quaternion] = []
+		dst_world.resize(n)
+		var done: Array[bool] = []
+		done.resize(n)
+		for b in n:
+			_solve(b, dst, map, src_world, src_rest_world, dst_rest_world, dst_world, done, dst_space)
+		for b in n:
+			if tracks[b] < 0:
+				continue
+			var parent := dst.get_bone_parent(b)
+			var parent_world := dst_world[parent] if parent >= 0 else dst_space
+			out.rotation_track_insert_key(tracks[b], time, (parent_world.inverse() * dst_world[b]).normalized())
+		var src_hip_y := (src_xf * src.get_bone_global_pose(hips_src)).origin.y - src_ground
+		var rest_d := dst.get_bone_rest(hips_dst).origin
+		var hips_pos := Vector3(rest_d.x, src_hip_y * hips_ratio, rest_d.z)
+		out.position_track_insert_key(hips_track, time, hips_pos)
+		for toe in toes:
+			if toe >= 0:
+				lowest_toe = minf(lowest_toe, _bone_height(dst, toe, hips_dst, hips_pos, dst_world))
+	if lowest_toe < INF:
+		for k in out.track_get_key_count(hips_track):
+			var v: Vector3 = out.track_get_key_value(hips_track, k)
+			out.track_set_key_value(hips_track, k, v - Vector3(0.0, lowest_toe, 0.0))
+	player.stop()
+	return out
+
+
+## Full transform of `node` relative to `root` (rotation, scale and offset), from the node chain.
+static func _space_xf(root: Node, node: Node3D) -> Transform3D:
+	var xf := Transform3D.IDENTITY
+	var n: Node = node
+	while n != null and n != root:
+		if n is Node3D:
+			xf = (n as Node3D).transform * xf
+		n = n.get_parent()
+	return xf
+
+
+## Sum of rest bone offsets for a chain of named bones (leg length in skeleton units).
+static func _chain_length(sk: Skeleton3D, names: Array) -> float:
+	var total := 0.0
+	for nm in names:
+		var i := sk.find_bone(nm)
+		if i >= 0:
+			total += sk.get_bone_rest(i).origin.length()
+	return total

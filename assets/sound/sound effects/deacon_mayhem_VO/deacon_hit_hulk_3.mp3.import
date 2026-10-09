@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b7280sxb20350"
+path="res://.godot/imported/deacon_hit_hulk_3.mp3-930a46a61591d239cf7fc14f0b71ef2f.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_hit_hulk_3.mp3"
+dest_files=["res://.godot/imported/deacon_hit_hulk_3.mp3-930a46a61591d239cf7fc14f0b71ef2f.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

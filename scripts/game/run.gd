@@ -18,11 +18,15 @@ signal score_changed(score: int)
 @export_group("Kill points")
 @export var points_smashed: int = 10
 @export var points_stomped: int = 15
+## Foolsball Helmet charge.
+@export var points_tackled: int = 20
 @export var points_eaten: int = 30
 @export var points_crushed: int = 20
 @export var points_buried: int = 25
 @export var points_friendly_fire: int = 35
 @export var points_fell: int = 15
+## Glitter Bomb confetti kills (the augment's own +25% per stack comes on top).
+@export var points_glitter_bombed: int = 25
 @export var points_other: int = 10
 
 @export_group("Bonuses")
@@ -85,11 +89,13 @@ func points_for(cause: int) -> int:
 	match cause:
 		KillCause.SMASHED: return points_smashed
 		KillCause.STOMPED: return points_stomped
+		KillCause.TACKLED: return points_tackled
 		KillCause.EATEN: return points_eaten
 		KillCause.CRUSHED: return points_crushed
 		KillCause.BURIED: return points_buried
 		KillCause.FRIENDLY_FIRE: return points_friendly_fire
 		KillCause.FELL: return points_fell
+		KillCause.GLITTER_BOMBED: return points_glitter_bombed
 	return points_other
 
 
@@ -99,7 +105,8 @@ func record_kill(human: Human) -> void:
 	kills += 1
 	var cause := human.death_cause
 	kills_by_cause[cause] = int(kills_by_cause.get(cause, 0)) + 1
-	var points := roundi(points_for(cause) * wave_multiplier())
+	# Augment bonuses (head pop, confetti) scale this kill's points, not the bounty.
+	var points := roundi(points_for(cause) * wave_multiplier() * (1.0 + human.score_bonus))
 	kill_points_total += points
 	if human.bounty > 0:
 		specials_killed[human.kind_name] = int(specials_killed.get(human.kind_name, 0)) + 1

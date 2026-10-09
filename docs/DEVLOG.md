@@ -30,6 +30,7 @@
 | Aim / face | Mouse |
 | Punch | Left mouse (hold to keep punching) |
 | Ground pound | Right mouse or Space |
+| Foolsball charge (once the augment is picked) | Shift |
 | Debug: take 10 damage | H (editor builds only) |
 | Restart after death | R |
 
@@ -474,6 +475,85 @@ Steps 4-21 pass (step 7 now expects the score on the HUD line). Step 3 is still 
 **Tests:** steps 3-22 all pass, the step 3 swarm count included this time. Steps 7 and 10 now check the popup instead of the old game-over text; step 22 expects the 0.25 multiplier. Codex's `tools/run_end_preview.gd` and `tools/run_end_integration.gd` pass with the new math. Death and victory versions were rendered with full sample data and inspected.
 - Known gap: the fonts are system fonts (Impact, Trebuchet), so machines without them fall back to a plain font. Bundle a font file before shipping.
 
+**Boss design: Deacon Mayhem (locked 2026-10-09).** Not built yet; waiting on assets.
+- **Who:** a manic, narcissistic preacher-villain. Platinum mohawk and beard, an eyepatch, a torn red vest, rose and serpent tattoos, white jeans splattered with green goo.
+- **Voice:** a deep, low-register Black American man with a heavy Atlanta drawl and a melodic, sing-song flow. He preaches like a modern Atlanta pastor: conversational, then building in waves of repetition. Controlled menace with unhinged bursts. Will writes the lines.
+- **Size:** halfway between a soldier (1.8 m) and the Hulk. Set exactly once the model is in.
+- **Entrance:** wave 15's soldiers die, the victory roar starts (the fake-out), and he rides in on the armored war truck.
+- **Phase 1, the truck (its own health bar):**
+  - The turret fires with a visible sweep-line warning before each burst.
+  - Ramming runs down the corridor, telegraphed by headlights and an engine rev. The truck sticks in the end wall for 2-3 s: the punish window.
+  - Damage sources: the thrown car (big, and the intended move), pillar rubble and ground pounds (medium), punches (small).
+- **Transition:** the truck explodes. A ~2 s beat with slow motion and the camera held on him: he walks out of the fire, pulls his bell from the wreckage, rings it once. He can't be hurt during the beat.
+- **Phase 2, hand to hand (his own health bar):** his weapon is **Sunday Service**, a church bell on a chain. Wide swings, an overhead slam, it rattles on wind-up and rings (*DONNNG*) on every hit.
+- **Throughout:** grunts trickle in during the whole fight, so eating to heal stays alive. Eating and the car crush kill specials outright, but not the boss.
+- **Assets needed from Will:** the Deacon (T-pose, Mixamo-rigged); the truck body and the turret as separate models; Sunday Service (bell, short chain, handle) as its own model; voice lines.
+- **Mixamo animations:** walk/run, 2-3 punches or a combo, a heavy slam, a hit reaction, a taunt, a death, and a sitting or gripping pose for the turret.
+
+**Step 18 (augments), 2026-10-09.** Pick 1 of 3 after every cleared wave. Seven augments are in; Foolsball Helmet waits on a charge animation.
+- **Data:** each augment is a .tres in `data/augments/` (class `Augment`: id, display_name, rarity, category, description, max_stacks, where 0 = unlimited). Cards can be retuned in the Inspector; their effects live in code.
+- **`scripts/game/augment_system.gd` (`AugmentSystem`, the "Augments" node in main.tscn):**
+  - rolls offers weighted 60/30/10 (Common/Rare/Legendary), never repeating a card in one offer and never offering a maxed one
+  - opens the pick screen 1.6 s after a wave clears (the victory roar starts first), pauses the game, applies the pick, and records it in the Run for the summary
+  - `enabled` turns the pick screen off (older tests that clear waves use it)
+- **`scripts/ui/augment_picker.gd` (`AugmentPicker`):** comic-paper cards matching the run summary. A rarity band, the name, the category, the description (name and description shrink to fit), and NEW or OWNED x/y. Pick with 1/2/3 or a click.
+- **The augments as built:**
+  - **Little Man No Hurt Hulk** (Common, unlimited): +30 max HP the first time, +20 after; heals the same amount.
+  - **Armor Up!** (Common, x3): a shield of 15 per stack, refilled every wave and active the moment you pick it. Damage hits the shield first. The HUD shows SHIELD next to HP.
+  - **Me Strong!** (Common, x3): +2 punch targets per stack (4, 6, 8, 10).
+  - **So Hungry!** (Rare, x3): eating heals +5 per stack.
+  - **Bottomless Man-Mosas** (Rare, once): eat cooldown -2 s (3 to 1; the floor is 0.5).
+  - **Bobbleheads** (Rare, once): every soldier's head is 3x size (`HeadScale`, a SkeletonModifier3D that keeps itself last so the ragdoll keeps the big head). Punch kills have a 25% chance to pop the head off: a blood spray and chunks, and +50% points for that kill.
+  - **Glitter Bomb** (Rare, x3): a flying body moving 5+ m/s that passes within 0.9 m of a living soldier bursts into confetti (`ConfettiBurst`) and kills him. The kill is a new cause, **Glitter Bombed** (25 points, +25% per stack). It has its own row in the run summary (now 8 rows).
+- **Plumbing:**
+  - `Health.shield`
+  - `Human.score_bonus` (Run multiplies that kill's points by 1 + bonus; bounties are unaffected) and `Human.force_confetti`
+  - `Human.kill()` calls `on_kill` on the "kill_modifiers" group before the corpse is made
+  - corpses gained `get_velocity()` and `confetti()`
+  - `DeathDirector` gained `confetti_at()`, `pop_head()` and a `confettied` signal
+  - the spawner gained `human_spawned`
+
+**Tests:** step 23 passed all 33 checks, 5 runs in a row. It covers:
+- rolls are 3 distinct cards, all 7 appear, commons outnumber rares
+- the wave clear opens the pick screen and pauses; pressing 2 picks and unpauses; the pick is recorded
+- every augment's numbers, including the shield soaking damage, refilling and showing in the HUD
+- maxed augments aren't offered again
+- big heads on soldiers already out and on new spawns; the head pop removes the head, scores +50% and survives the ragdoll
+- a punched body takes out the soldier behind it: Glitter Bombed, 2 confetti bursts, +50% with 2 stacks
+- the summary lists augments with their stack count; no pick screen after death
+
+Steps 4-22, Codex's two run-end checks and the soak all pass (steps 7, 11, 14, 18, 19, 22 and the soak turn augments off). Step 3 is still the known flaky swarm count. The pick screen, the big heads, a head pop and confetti were rendered from the game camera and checked.
+
+**Step 19 (Foolsball Helmet), 2026-10-09.** The eighth augment, built on Will's ActorCore "Barbarous Slow Run" (start, loop and end clips in `assets/hulk/barbarous-slow-run/`).
+- **Retargeting a different rig:** ActorCore uses `CC_Base_` bones, not Mixamo names. `AnimRetarget` gained:
+  - `actorcore_to_mixamo()`, the bone name map (pelvis, waist, spine, neck, head, arms, fingers, legs)
+  - `retarget_sampled()`, which plays the source clip on its own skeleton, samples the world pose each frame and solves it onto the Hulk. The hips height is scaled by leg length and the toes are grounded.
+  - The source's root motion is dropped; the CharacterBody3D owns movement.
+- **`HulkAnimator.prepare_charge()`** builds `charge_start`, `charge_loop` and `charge_end` once, when the augment is picked (about 25 ms, hidden behind the pick screen). Speeds: loop 1.8x, stop 2.2x, dazed stop 1.1x. Moving cuts the stop clip short, same as the victory roar.
+- **`scripts/player/foolsball_charge.gd` (`FoolsballCharge`, a child of the Hulk):**
+  - Shift charges toward the cursor. Phases: LOCKED until picked, then READY, WINDUP 0.22 s, DASH 8 m at 16 m/s (about 0.5 s), RECOVER 0.3 s, COOLDOWN 6 s.
+  - He can't be hurt from windup to the end of the dash. The direction locks at takeoff.
+  - Every soldier in his path dies as a new cause, **Tackled** (20 points), and flies off to the side. Sideways beats forward on purpose: a body thrown straight ahead slower than him would ride his chest.
+  - Pillars ahead burst and he runs through the stump. A parked car gets punted as a throw (it crushes like one).
+  - A wall stops him: BONK, dazed for 1.1 s, hittable, then the cooldown.
+- **The helmet:** Will's red Tripo football helmet (`assets/props/helmet/`) goes on when the augment is picked.
+  - On this rig the visible head is skinned to the **Neck** bone; the Head bone has no vertices. The helmet rides the Neck on a BoneAttachment3D.
+  - It is placed on the bare mesh (`helmet_offset`, mesh rest space) and carried into the bone's space by the Neck's skin bind pose. That's the same math that moves his head, so it can't drift during punches, the pound or the charge.
+  - It gets the painterly shader like the rest of him. His big eye peeks through the face cage.
+- **Elsewhere:**
+  - the HUD adds a CHARGE line only once the augment is owned
+  - Main adds a punch-hit sound and a small shake per tackle, and a thud, big shake and hit stop on a BONK
+  - the run summary has 9 kill rows (Tackled is third), spaced 26 px
+- **Design note:** the bridge is 8 m wide, so a charge across it always hits the wall. Charges are for running the length of the bridge.
+
+**Tests:** step 24 passed all 41 checks, 3 runs in a row. It covers:
+- locked until picked with no helmet; clips build fast; the helmet goes on at head height; never offered again
+- windup, invulnerable dash, locked facing, 8 m in ~0.5 s, 4 of 4 tackled in a line, a soldier 3 m to the side untouched, Tackled scoring, recovery, cooldown and the HUD countdown
+- a wall leaves him dazed and hittable
+- he runs through a pillar and punts the car
+
+Step 23 was updated for 8 augments (commons > rares > legendaries). Steps 3-23, Codex's run-end checks and the soak all pass. The retarget was rendered side and front against the source clip, and a full charge (windup, tackles, pillar, splats) from the game camera.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -518,3 +598,10 @@ Steps 4-21 pass (step 7 now expects the score on the HUD line). Step 3 is still 
 - **AfterimageTrail (created in code by the ninja, so edit the defaults at the top of `scripts/vfx/afterimage_trail.gd`):** interval, lifetime, min_speed, smoke_color, rim_color, base_alpha, grow, enabled. Shader extras in `shaders/afterimage.gdshader`: rim_power, smoke_scale, fade_in
 - **Run (main.tscn):** points_smashed / stomped / eaten / crushed / buried / friendly_fire / fell / other, juggle_points, splat_points, wave_clear_points, wave_multiplier_step
 - **Score on enemies (Human exports, set per scene):** kind_name, bounty
+- **Augments (main.tscn):** enabled, offer_count, rarity_weights, pick_delay, and every augment number (little_man_first_hp / extra_hp, armor_per_stack, me_strong_targets, so_hungry_heal, man_mosas_cooldown_cut, bobblehead_scale, head_pop_chance, head_pop_bonus, glitter_bonus_per_stack, glitter_min_speed, glitter_hit_radius)
+- **Augment cards (data/augments/*.tres):** display_name, rarity, category, description, max_stacks
+- **Run:** points_glitter_bombed
+- **Hulk/FoolsballCharge:** helmet_scene, helmet_bone, helmet_scale, helmet_offset, helmet_tilt, cooldown, windup_time, recover_time, dazed_time, distance, speed, hit_reach, wall_dot, launch_forward, launch_side, launch_up, car_punt_scale
+- **Hulk/Animator > Charge clips:** charge_loop_speed, charge_end_speed, charge_dazed_speed
+- **Main > Foolsball charge:** tackle_shake, bonk_shake, bonk_hit_stop
+- **Run:** points_tackled

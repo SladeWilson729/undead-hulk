@@ -85,6 +85,11 @@ var model: Node3D
 var gib_material: Material
 ## How he died (a KillCause), set just before `died` fires. The Run record reads it.
 var death_cause: int = KillCause.UNKNOWN
+## Extra score for this kill as a fraction (0.5 = +50%). Augments add to it at death
+## (Bobbleheads head pop, Glitter Bomb confetti kill); the Run record reads it.
+var score_bonus: float = 0.0
+## Set before kill() to burst this soldier into confetti instead of a corpse (Glitter Bomb).
+var force_confetti: bool = false
 
 var _ap: AnimationPlayer
 var _avoid_timer: float = 0.0
@@ -300,6 +305,8 @@ func kill(launch_velocity: Vector3 = Vector3.ZERO, cause: int = KillCause.UNKNOW
 		return
 	_dead = true
 	death_cause = cause
+	# Augments that change how a death plays out (head pops) get their say first.
+	get_tree().call_group("kill_modifiers", "on_kill", self, launch_velocity)
 	# Leave the group NOW, not at end of frame, so a second attack this same frame
 	# (or the Hulk's shove) can't hit a human that is already dead.
 	remove_from_group("enemies")

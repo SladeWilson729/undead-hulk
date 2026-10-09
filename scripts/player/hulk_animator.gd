@@ -32,6 +32,14 @@ const UPPER_BODY := ["Spine", "Neck", "Head", "Shoulder", "Arm", "Hand"]
 ## pinning the hips would make him topple in place and slide his feet.
 const KEEP_ROOT_MOTION := ["death"]
 const HIPS_TRACK := ^"Skeleton3D:mixamorig_Hips"
+## Foolsball Helmet charge: ActorCore "Barbarous Slow Run" in three parts (start, loop, end).
+## A different rig (CC_Base_ bones), so these are retargeted onto the Hulk at runtime by
+## AnimRetarget.retarget_sampled, and only once the augment is picked (prepare_charge).
+const CHARGE_FILES := {
+	"charge_start": "res://assets/hulk/barbarous-slow-run/barbarous-slow-run1s.fbx",
+	"charge_loop": "res://assets/hulk/barbarous-slow-run/barbarous-slow-run2l.fbx",
+	"charge_end": "res://assets/hulk/barbarous-slow-run/barbarous-slow-run3e.fbx",
+}
 
 ## The model node (instance of hulk_idle.fbx) whose AnimationPlayer we drive.
 @export var model: Node3D
@@ -100,6 +108,15 @@ const HIPS_TRACK := ^"Skeleton3D:mixamorig_Hips"
 @export var eat_end_time: float = 1.3
 @export var eat_speed: float = 1.5
 
+@export_group("Charge clips")
+## Playback rate of the run loop while charging. The clip is a heavy slow run; sped up it
+## reads as a head-down bull rush.
+@export var charge_loop_speed: float = 1.8
+## Playback rate of the stop clip after a clean charge (the 1.35 s clip plays in ~0.6 s).
+@export var charge_end_speed: float = 2.2
+## Playback rate of the stop clip after hitting a wall (slower: he's seeing stars).
+@export var charge_dazed_speed: float = 1.1
+
 var _ap: AnimationPlayer
 var _in_action: bool = false
 var _action_end: float = 0.0
@@ -108,6 +125,8 @@ var _dead: bool = false
 var _victory_pending: bool = false
 ## Holding a car: locomotion uses carry_idle / carry_walk.
 var _carrying: bool = false
+## The current action ends early if the player starts moving (victory, charge stop).
+var _cancel_on_move: bool = false
 
 
 func _ready() -> void:
@@ -133,14 +152,15 @@ func update_locomotion(speed: float) -> void:
 	if _in_action:
 		if _ap.current_animation_position >= _action_end or not _ap.is_playing():
 			_in_action = false
-		elif is_celebrating() and speed > idle_threshold:
-			# Moving cancels the celebration on the spot. The player never waits on it.
+		elif _cancel_on_move and speed > idle_threshold:
+			# Moving cancels the celebration (or the charge stop) on the spot. The player never waits on it.
 			_in_action = false
 		else:
 			return
 	if _victory_pending and speed <= idle_threshold and not _carrying:
 		_victory_pending = false
 		_start_action("hulk/victory", victory_start_time, 1.0, victory_end_time, victory_blend)
+		_cancel_on_move = true
 		victory_started.emit()
 		return
 	if speed > idle_threshold:
@@ -202,6 +222,50 @@ func eat_duration() -> float:
 	return (eat_end_time - eat_start_time) / eat_speed
 
 
+## Builds the three charge clips on the Hulk's skeleton. Takes a few frames' worth of work
+## (three FBX loads plus sampling), so it runs once, when Foolsball Helmet is picked (the game
+## is paused on the pick screen then). Safe to call again; it only builds once.
+func prepare_charge() -> void:
+	if has_charge():
+		return
+	var lib := _ap.get_animation_library("hulk")
+	for clip_name in CHARGE_FILES:
+		var src: Node3D = (load(CHARGE_FILES[clip_name]) as PackedScene).instantiate()
+		src.process_mode = Node.PROCESS_MODE_ALWAYS  # Sampling has to work while the pick screen pauses the game.
+		src.visible = false
+		add_child(src)
+		var source_player := SoldierVariants.find_player(src)
+		var anim := AnimRetarget.retarget_sampled(src, source_player.get_animation_list()[0], model,
+				AnimRetarget.actorcore_to_mixamo(), "CC_Base_Hip")
+		src.free()
+		lib.add_animation(clip_name, _prepare(anim, clip_name == "charge_loop"))
+
+
+func has_charge() -> bool:
+	return _ap.has_animation("hulk/charge_loop")
+
+
+## Head down, dig in. Plays the start clip over `windup` real seconds.
+func play_charge_start(windup: float) -> void:
+	var length := _ap.get_animation("hulk/charge_start").length
+	_start_action("hulk/charge_start", 0.0, length / maxf(windup, 0.05), length - 0.01, 0.08)
+
+
+## The run itself. Holds until play_charge_end().
+func play_charge_loop() -> void:
+	_start_action("hulk/charge_loop", 0.0, charge_loop_speed, INF, 0.06)
+
+
+## Pulls up. dazed = hit a wall: plays slower. Moving cuts it short.
+## Returns real seconds the clip takes.
+func play_charge_end(dazed: bool) -> float:
+	var length := _ap.get_animation("hulk/charge_end").length
+	var rate := charge_dazed_speed if dazed else charge_end_speed
+	_start_action("hulk/charge_end", 0.0, rate, length - 0.01, 0.1)
+	_cancel_on_move = true
+	return length / rate
+
+
 func is_carrying() -> bool:
 	return _carrying
 
@@ -247,6 +311,7 @@ func _start_action(clip: String, from_time: float, rate: float, end_time: float,
 	_ap.speed_scale = rate
 	_in_action = true
 	_action_end = end_time
+	_cancel_on_move = false
 
 
 func _play_if_new(clip: String, blend: float) -> void:

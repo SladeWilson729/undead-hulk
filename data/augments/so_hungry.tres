@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Augment" format=3]
+
+[ext_resource type="Script" path="res://scripts/game/augment.gd" id="1_aug"]
+
+[resource]
+script = ExtResource("1_aug")
+id = &"so_hungry"
+display_name = "So Hungry!"
+rarity = 1
+category = "Sustain"
+description = "Eating heals 5 more HP."
+max_stacks = 3

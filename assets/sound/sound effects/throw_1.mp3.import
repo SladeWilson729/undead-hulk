@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c4hl2g7smdodq"
+path="res://.godot/imported/throw_1.mp3-062d3da05cfb1dedbcbd62b8f5dc16a1.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/throw_1.mp3"
+dest_files=["res://.godot/imported/throw_1.mp3-062d3da05cfb1dedbcbd62b8f5dc16a1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://uh28m3sbl711"
+path="res://.godot/imported/deacon_enterance_1.mp3-4533480d2b6b55a2bf41d8b3575e2c1a.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/deacon_mayhem_VO/deacon_enterance_1.mp3"
+dest_files=["res://.godot/imported/deacon_enterance_1.mp3-4533480d2b6b55a2bf41d8b3575e2c1a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

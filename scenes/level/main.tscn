@@ -11,6 +11,7 @@
 [ext_resource type="AudioStream" uid="uid://begr70ia5t1ay" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
 [ext_resource type="Script" path="res://scripts/audio/sfx.gd" id="12_sfx"]
 [ext_resource type="Script" path="res://scripts/game/run.gd" id="13_run"]
+[ext_resource type="Script" path="res://scripts/game/augment_system.gd" id="14_augments"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -35,6 +36,9 @@ shadow_enabled = true
 
 [node name="Run" type="Node" parent="."]
 script = ExtResource("13_run")
+
+[node name="Augments" type="Node" parent="."]
+script = ExtResource("14_augments")
 
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
 

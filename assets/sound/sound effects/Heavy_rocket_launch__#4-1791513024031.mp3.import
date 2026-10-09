@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cenjwjs2oo12k"
+path="res://.godot/imported/Heavy_rocket_launch__#4-1791513024031.mp3-1e8c6701c9fbe78e511adc0d688947ce.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/Heavy_rocket_launch__#4-1791513024031.mp3"
+dest_files=["res://.godot/imported/Heavy_rocket_launch__#4-1791513024031.mp3-1e8c6701c9fbe78e511adc0d688947ce.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
