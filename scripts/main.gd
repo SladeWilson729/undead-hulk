@@ -18,8 +18,14 @@ extends Node3D
 @export_group("Foolsball charge")
 ## Each soldier tackled kicks the camera a little; a wall kicks it a lot.
 @export var tackle_shake: float = 0.12
-@export var bonk_shake: float = 0.6
+@export var bonk_shake: float = 0.85
+## Zoom-and-drop jolt on a BONK (0..1, see CameraRig > Impact kick).
+@export var bonk_kick: float = 1.0
 @export var bonk_hit_stop: float = 0.08
+
+@export_group("Survival")
+## Fraction of max HP healed every time a wave is cleared (0.25 = a quarter of the bar).
+@export_range(0.0, 1.0) var wave_clear_heal: float = 0.25
 
 @export_group("Tough enemies")
 ## Camera kick when a ninja or rocket soldier takes a hit and lives.
@@ -38,7 +44,11 @@ extends Node3D
 @export var punch_shake: float = 0.3
 @export var punch_shake_per_hit: float = 0.08
 ## Ground pound always shakes (even on a miss: the Hulk just hit the ground hard).
-@export var pound_shake: float = 0.55
+## A miss shakes at pound_miss_shake; a pound that kills at pound_shake.
+@export var pound_shake: float = 0.8
+@export var pound_miss_shake: float = 0.6
+## Zoom-and-drop jolt on every pound landing (0..1, see CameraRig > Impact kick).
+@export var pound_kick: float = 0.85
 @export var pound_hit_stop: float = 0.08
 ## Small kick for every explosion (stacks when several pop at once).
 @export var explosion_shake: float = 0.15
@@ -65,6 +75,8 @@ var _hit_stop_token: int = 0
 
 
 func _ready() -> void:
+	# Saved sound settings (music / SFX / voices on or off) before anything plays.
+	GameSettings.load_and_apply()
 	hulk.camera = camera_rig.camera
 	hud.bind(hulk.health)
 	hulk.punch.punched.connect(_on_punched)
@@ -78,6 +90,7 @@ func _ready() -> void:
 	hulk.charge.bonked.connect(func(at: Vector3) -> void:
 		sfx.play("pound_hit", at)
 		camera_rig.add_shake(bonk_shake)
+		camera_rig.add_kick(bonk_kick)
 		hit_stop(bonk_hit_stop))
 	deaths.exploded.connect(func(_pos: Vector3) -> void: camera_rig.add_shake(explosion_shake))
 	hud.bind_spawner(spawner)
@@ -111,10 +124,20 @@ func _ready() -> void:
 	spawner.human_spawned.connect(augments.dress)
 	spawner.wave_started.connect(func(_wave: int, _size: int) -> void: augments.on_wave_started())
 	spawner.wave_cleared.connect(_on_wave_cleared_pick)
+	spawner.wave_cleared.connect(_on_wave_cleared_heal)
 	spawner.human_killed.connect(func(pos: Vector3) -> void: sfx.play("yelp", pos + Vector3.UP * 1.5))
 	# Victory roar after each cleared wave; the next wave cuts it if it's still going.
 	spawner.wave_cleared.connect(func(_wave: int) -> void: hulk.animator.queue_victory())
 	spawner.wave_started.connect(func(_wave: int, _size: int) -> void: hulk.animator.cancel_victory())
+
+
+## Surviving a wave patches him up a bit. Dead Hulks stay dead.
+func _on_wave_cleared_heal(_wave: int) -> void:
+	if hulk.health.is_dead:
+		return
+	var amount := roundi(hulk.health.max_health * wave_clear_heal)
+	if amount > 0:
+		hulk.health.heal(amount)
 
 
 ## After a wave clears (and the victory roar starts), pause for the augment pick.
@@ -184,7 +207,8 @@ func _on_rocket_fired(rocket: Rocket) -> void:
 
 func _on_pounded(kills: int) -> void:
 	sfx.play("pound_hit", hulk.global_position)
-	camera_rig.add_shake(pound_shake if kills > 0 else pound_shake * 0.5)
+	camera_rig.add_shake(pound_shake if kills > 0 else pound_miss_shake)
+	camera_rig.add_kick(pound_kick)
 	if kills > 0:
 		hit_stop(pound_hit_stop)
 

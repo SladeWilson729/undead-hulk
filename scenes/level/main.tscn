@@ -9,9 +9,9 @@
 [ext_resource type="Script" uid="uid://bctbxbt6rk1br" path="res://scripts/deaths/death_director.gd" id="7_deaths"]
 [ext_resource type="Script" uid="uid://dq87aj7mtfefm" path="res://scripts/waves/wave_spawner.gd" id="8_spawner"]
 [ext_resource type="AudioStream" uid="uid://begr70ia5t1ay" path="res://assets/sound/music/Zombie Funfair.wav" id="11_music"]
-[ext_resource type="Script" path="res://scripts/audio/sfx.gd" id="12_sfx"]
-[ext_resource type="Script" path="res://scripts/game/run.gd" id="13_run"]
-[ext_resource type="Script" path="res://scripts/game/augment_system.gd" id="14_augments"]
+[ext_resource type="Script" uid="uid://3as2bgbx18ka" path="res://scripts/audio/sfx.gd" id="12_sfx"]
+[ext_resource type="Script" uid="uid://c64wwelrhja4q" path="res://scripts/game/run.gd" id="13_run"]
+[ext_resource type="Script" uid="uid://b82ws7vxvsgcj" path="res://scripts/game/augment_system.gd" id="14_augments"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
@@ -34,10 +34,10 @@ shadow_enabled = true
 
 [node name="Level" parent="." unique_id=1103270397 instance=ExtResource("5_level")]
 
-[node name="Run" type="Node" parent="."]
+[node name="Run" type="Node" parent="." unique_id=2085569985]
 script = ExtResource("13_run")
 
-[node name="Augments" type="Node" parent="."]
+[node name="Augments" type="Node" parent="." unique_id=2077900303]
 script = ExtResource("14_augments")
 
 [node name="Hulk" parent="." unique_id=1405270661 instance=ExtResource("2_hulk")]
@@ -69,5 +69,5 @@ stream = ExtResource("11_music")
 autoplay = true
 bus = &"Music"
 
-[node name="Sfx" type="Node3D" parent="."]
+[node name="Sfx" type="Node3D" parent="." unique_id=52978892]
 script = ExtResource("12_sfx")

@@ -143,9 +143,9 @@ func speed_multiplier(n: int) -> float:
 
 
 ## Spawns one human at the next spawn point. Public for tests and debug tools.
-func spawn_one(scene: PackedScene = null) -> Human:
+func spawn_one(scene: PackedScene = null, at: Variant = null) -> Human:
 	var human: Human = (scene if scene else human_scene).instantiate()
-	human.position = next_spawn_position()
+	human.position = at if at is Vector3 else next_spawn_position()
 	human.target = target
 	# Set before add_child: Human._ready() rolls its personal speed from move_speed.
 	human.move_speed *= speed_multiplier(maxi(wave, 1))
@@ -165,6 +165,13 @@ func next_spawn_position() -> Vector3:
 	return base + Vector3(randf_range(-spawn_spread.x, spawn_spread.x), 0.0, randf_range(-spawn_spread.y, spawn_spread.y))
 
 
+## Specials come in at a random spawn marker. The grunts take turns between markers, and a
+## special used to spawn right after the Nth grunt, so it landed on the same side every wave.
+func random_spawn_position() -> Vector3:
+	var base: Vector3 = spawn_points().pick_random()
+	return base + Vector3(randf_range(-spawn_spread.x, spawn_spread.x), 0.0, randf_range(-spawn_spread.y, spawn_spread.y))
+
+
 ## World positions of the level's spawn markers, in scene order (fallback if it has none).
 func spawn_points() -> Array[Vector3]:
 	var points: Array[Vector3] = []
@@ -174,18 +181,18 @@ func spawn_points() -> Array[Vector3]:
 	return points if not points.is_empty() else FALLBACK_SPAWNS
 
 
-## One rocket soldier, at the next spawn point. Counts toward the wave like anyone.
+## One rocket soldier, at a random spawn point. Counts toward the wave like anyone.
 func spawn_rocket_soldier() -> Human:
 	_rockets_left = maxi(_rockets_left - 1, 0)
-	var soldier := spawn_one(rocket_soldier_scene)
+	var soldier := spawn_one(rocket_soldier_scene, random_spawn_position())
 	special_spawned.emit(soldier)
 	return soldier
 
 
-## One ninja, at the next spawn point. Counts toward the wave like anyone.
+## One ninja, at a random spawn point. Counts toward the wave like anyone.
 func spawn_ninja() -> Human:
 	_ninjas_left = maxi(_ninjas_left - 1, 0)
-	var ninja := spawn_one(ninja_scene)
+	var ninja := spawn_one(ninja_scene, random_spawn_position())
 	special_spawned.emit(ninja)
 	return ninja
 

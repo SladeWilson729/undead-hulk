@@ -16,16 +16,37 @@ extends Node3D
 
 @export_group("Shake")
 ## How fast shake fades, in trauma per second. 1 trauma fully decays in 1/shake_decay seconds.
-@export var shake_decay: float = 3.0
-## Largest camera offset (meters) at full trauma.
-@export var max_shake_offset: float = 0.5
+@export var shake_decay: float = 2.4
+## Largest camera offset (meters) at full trauma. The camera is ~19 m from the action, so
+## anything under ~0.3 m barely reads; 1.1 makes a full-trauma hit rattle.
+@export var max_shake_offset: float = 1.1
+## How fast the shake wobbles (noise speed). Smooth noise instead of a new random offset every
+## frame: it reads as the camera being knocked around, not as video static.
+@export var shake_frequency: float = 28.0
+
+@export_group("Impact kick")
+## Big landings (ground pound, the charge hitting a wall) also jolt the camera: a quick zoom-in
+## and a drop, springing back. Shake alone is all sideways jitter; the kick sells the weight.
+## Degrees of FOV the camera punches in at a full kick.
+@export var kick_fov: float = 5.0
+## Meters the view drops at a full kick (the "thud").
+@export var kick_drop: float = 0.6
+## Seconds for the kick to spring back.
+@export var kick_time: float = 0.3
 
 @onready var camera: Camera3D = $Camera3D
 
 var _trauma: float = 0.0
+var _kick: float = 0.0
+var _base_fov: float
+var _noise := FastNoiseLite.new()
+var _noise_t: float = 0.0
 
 
 func _ready() -> void:
+	_base_fov = camera.fov
+	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	_noise.seed = randi()
 	if target:
 		global_position = target.global_position
 		# Physics interpolation is on, so tell it this jump is a teleport, not motion.
@@ -52,12 +73,27 @@ func add_shake(amount: float) -> void:
 	_trauma = minf(_trauma + amount, 1.0)
 
 
-# Shake uses the camera's h_offset/v_offset instead of moving its transform.
-# WHY: those offsets are applied at render time and don't fight physics interpolation.
+## Impact jolt for heavy landings: zoom-in plus a drop that springs back. amount 0..1.
+func add_kick(amount: float) -> void:
+	_kick = clampf(maxf(_kick, amount), 0.0, 1.0)
+
+
+## Current shake trauma (0..1). For tests and debug.
+func trauma() -> float:
+	return _trauma
+
+
+# Shake and kick use the camera's h_offset/v_offset and fov instead of moving its transform.
+# WHY: those are applied at render time and don't fight physics interpolation.
 func _process(delta: float) -> void:
-	if _trauma <= 0.0:
+	if _trauma <= 0.0 and _kick <= 0.0:
 		return
 	_trauma = maxf(_trauma - shake_decay * delta, 0.0)
+	_kick = maxf(_kick - delta / maxf(kick_time, 0.01), 0.0)
+	_noise_t += delta * shake_frequency
 	var strength := _trauma * _trauma * max_shake_offset
-	camera.h_offset = randf_range(-1.0, 1.0) * strength
-	camera.v_offset = randf_range(-1.0, 1.0) * strength
+	# Ease the kick out: snaps in at once, eases back.
+	var k := _kick * _kick
+	camera.h_offset = _noise.get_noise_2d(_noise_t, 0.0) * strength
+	camera.v_offset = _noise.get_noise_2d(0.0, _noise_t) * strength - k * kick_drop
+	camera.fov = _base_fov - k * kick_fov

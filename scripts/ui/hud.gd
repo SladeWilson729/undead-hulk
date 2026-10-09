@@ -28,6 +28,8 @@ var _banner_tween: Tween
 var _ended: bool = false
 ## The run summary once it's up (null before that).
 var end_popup: RunEndPopup
+## The Esc menu while it's open (null otherwise).
+var pause_menu: PauseMenu
 var _health: Health
 
 
@@ -162,6 +164,26 @@ func _on_wave_started(wave: int, _size: int) -> void:
 	_banner_tween.tween_interval(0.9)
 	_banner_tween.tween_property(banner, "modulate:a", 0.0, 0.4)
 	_banner_tween.tween_callback(func() -> void: banner.visible = false)
+
+
+## Esc / P mid-run opens the pause menu. Not over the pick screen (already paused) or the
+## run summary; the menu itself handles Esc to close.
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("pause"):
+		return
+	if pause_menu or end_popup or _ended or get_tree().paused:
+		return
+	get_viewport().set_input_as_handled()
+	open_pause_menu()
+
+
+func open_pause_menu() -> PauseMenu:
+	if pause_menu:
+		return pause_menu
+	pause_menu = PauseMenu.new()
+	add_child(pause_menu)
+	pause_menu.closed.connect(func() -> void: pause_menu = null)
+	return pause_menu
 
 
 func _on_died() -> void:

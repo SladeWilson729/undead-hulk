@@ -31,11 +31,14 @@ const COMIC := preload("res://scripts/vfx/comic_wall_impact.gd")
 ## The bone the helmet rides on. On this Tripo rig the visible head is skinned to the NECK bone
 ## (the Head bone has no vertices), so that's the one that carries it.
 @export var helmet_bone: String = "mixamorig_Neck"
-## Size relative to the helmet file.
-@export var helmet_scale: float = 0.25
+## Size relative to the helmet file. Measured fit: his head is 0.14 wide and 0.14 deep (face to
+## back of skull, model units); the helmet's inside is about 0.7 x 0.73, so 0.26 leaves a little room.
+@export var helmet_scale: float = 0.26
 ## Where the helmet's bottom center sits on the bare model, in the mesh's own rest space
-## (model units: x right, y up, z toward his face). His head spans about y 0.58-0.76.
-@export var helmet_offset: Vector3 = Vector3(0.0, 0.585, 0.065)
+## (model units: x right, y up, z toward his face). His head runs from the chin at y 0.58 to the
+## crown at 0.76, back of the skull at z 0.04, face at 0.18. This puts the shell's inside back
+## just behind his skull, the crown over his crown, and the face cage clear of his face.
+@export var helmet_offset: Vector3 = Vector3(0.0, 0.565, 0.142)
 ## Tips the helmet forward (+) or back (-), degrees.
 @export var helmet_tilt: float = 0.0
 

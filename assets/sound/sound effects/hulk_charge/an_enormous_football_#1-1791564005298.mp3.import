@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b6nwiikirka8x"
+path="res://.godot/imported/an_enormous_football_#1-1791564005298.mp3-5f41df0891183051d503cf0885316c4d.mp3str"
+
+[deps]
+
+source_file="res://assets/sound/sound effects/hulk_charge/an_enormous_football_#1-1791564005298.mp3"
+dest_files=["res://.godot/imported/an_enormous_football_#1-1791564005298.mp3-5f41df0891183051d503cf0885316c4d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -28,7 +28,8 @@ enum Phase { READY, REACH, LIFT, EAT, SWALLOW, COOLDOWN }
 @export var hang_drop: float = 1.5
 
 @export_group("Eat")
-@export var heal_amount: int = 5
+## HP back per soldier eaten. Raised from 5 after playtesting: deep waves were a slow bleed out.
+@export var heal_amount: int = 10
 ## Seconds after swallowing before he can eat again.
 @export var cooldown: float = 3.0
 ## Movement multiplier while grabbing and eating.

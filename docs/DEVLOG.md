@@ -30,6 +30,7 @@
 | Aim / face | Mouse |
 | Punch | Left mouse (hold to keep punching) |
 | Ground pound | Right mouse or Space |
+| Pause / settings | Esc or P |
 | Foolsball charge (once the augment is picked) | Shift |
 | Debug: take 10 damage | H (editor builds only) |
 | Restart after death | R |
@@ -586,6 +587,52 @@ Step 23 was updated for 8 augments (commons > rares > legendaries). Steps 3-23, 
 
 Updated for the change: step 15 counts sound clips from the groups table instead of a fixed 17; step 22's ninja bounty check hits her twice. Steps 3-25, Codex's run-end checks and the soak all pass. The flash was rendered and checked.
 
+**Step 21 (heavier camera on big landings), 2026-10-09.** Will asked for screen shake on the ground pound and when the Hulk charges into a wall. Both already shook, but too little to see: shake was trauma squared x 0.5 m, so a missed pound (0.275 trauma) moved the view about 4 cm from 19 m away.
+- **`CameraRig` shake:**
+  - `max_shake_offset` goes from 0.5 to 1.1 m and `shake_decay` from 3.0 to 2.4
+  - the offset now follows smooth simplex noise (`shake_frequency` 28) instead of a fresh random jump every frame, so it reads as the camera being knocked around rather than video static. It freezes during hit stop, like everything else.
+- **New impact kick (`add_kick(0..1)`):** a zoom-in (`kick_fov` 5 degrees) and a drop (`kick_drop` 0.6 m) that snap in and spring back over `kick_time` 0.3 s. Shake is all sideways jitter; the kick gives the landing weight. It is only used for heavy landings.
+- **Ground pound:** shake 0.8 when it kills, 0.6 on a miss (was 0.55 / 0.275), plus `pound_kick` 0.85.
+- **Charge into a wall (BONK):** shake 0.85 (was 0.6), plus `bonk_kick` 1.0, on top of the existing hit stop.
+- **Side effect:** every other shake (punches, rockets, car crashes) is about twice as visible as before. A single punch is still a nudge (3 cm).
+
+**Tests:** step 26 passed all 9 checks:
+- a missed pound peaks around 0.37 m of movement with the FOV dipping from 50 to 46.8
+- a BONK peaks around 0.45 m with the FOV dipping to 45.5
+- both settle back fully
+- a punch stays at 3 cm with no kick
+
+Steps 4-25 pass. Step 3 hit its known flaky swarm count.
+
+**Step 22 (pause menu with sound settings; specials from both sides), 2026-10-09.** From Will's playtest notes.
+- **Esc or P pauses** (`scripts/ui/pause_menu.gd`, `PauseMenu`, opened by the HUD). It uses the same paper-card look as the pick screen.
+  - Three toggles: MUSIC, SOUND EFFECTS, and HULK & BOSS VOICES. Each mutes its own audio bus (Music, SFX, Voice).
+  - Voices got their own toggle because the Deacon's lines will share that bus.
+  - Esc, P or RESUME closes it. It won't open over the pick screen or the run summary.
+- **Settings save** (`scripts/game/game_settings.gd`, `GameSettings`) to `user://settings.cfg` the moment a toggle changes. Main applies them at startup before anything plays.
+- **Specials spawn on a random side.** Grunts take turns between the spawn markers, and each special spawned right after the Nth grunt of the wave. N's parity never changed, so every special came from the east. They now pick a random marker (`WaveSpawner.random_spawn_position()`). Over 40 test spawns: 24 west, 16 east.
+
+**Tests:** step 27 passed all 15 checks. It covers:
+- Esc and P open the menu and pause
+- each toggle mutes only its own bus, and the choice is saved to the file
+- Esc closes the menu and unpauses
+- the saved file re-applies in a new session
+- no menu over the pick screen
+- specials on both sides
+
+Steps 3-26 and the soak pass. The menu was rendered and checked.
+
+**Sync problem found:** some files sent to the PC arrived with their OLD content. The write landed (new timestamp) but the bytes were the previous version. That is what "reverted" the helmet notes. Step 21's camera files (camera_rig.gd, main.gd and this log) and the measured helmet fit (scale 0.26, offset z 0.142) never actually reached the PC either: Will's playtest ran the first, too-far-back helmet. A full audit of every script and scene now matches. It was not Will's git. Files are now sent from fresh paths and verified by reading them back after every write.
+
+**Step 23 (survival tuning), 2026-10-09.** After Will's playtests, deep waves were a slow bleed out. His picks (A and C):
+- **Wave clear heals 25% of max HP** (Main > Survival > `wave_clear_heal`). It scales with Little Man, can't overheal, and never heals a dead Hulk. It stacks with Armor Up's shield refill.
+- **Eating heals 10** (was 5; `EatSoldier.heal_amount`). So Hungry still adds +5 per stack, so 15/20/25.
+- Not done (option B): wave growth stays +8 per wave with 60 alive at once. That's the next lever if waves 10+ are still too much.
+
+**Tests:** step 28 passed all 5 checks: eat 10, a clear heals 40 to 65, the cap at max, 25% of 150 is 38, and no healing the dead. Step 16 now reads the heal amount instead of assuming 5. All steps and the soak pass.
+
+**Waiting on Will's models** for the three interactables: throwing soldiers (no model needed), an explosive barrel, and trash cans / shopping carts.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -640,3 +687,7 @@ Updated for the change: step 15 counts sound clips from the groups table instead
 - **Human > Toughness (set per scene; ninja_soldier.tscn 2, rocket_soldier.tscn 3):** hits_to_kill, stagger_time, hit_knockback
 - **Main > Tough enemies:** special_hurt_shake
 - **Hulk/Voice:** charge_lines
+- **CameraRig > Shake:** shake_frequency (shake_decay and max_shake_offset retuned to 2.4 and 1.1)
+- **CameraRig > Impact kick:** kick_fov, kick_drop, kick_time
+- **Main > Hit feel:** pound_miss_shake, pound_kick; **Main > Foolsball charge:** bonk_kick
+- **Main > Survival:** wave_clear_heal
