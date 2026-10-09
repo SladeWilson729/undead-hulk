@@ -1,6 +1,6 @@
 class_name WaveSpawner
 extends Node
-## Clear-to-advance waves. Each wave pours in from both ends of the corridor; once every
+## Clear-to-advance waves. Each wave pours in from the level's spawn points; once every
 ## human in it is dead, there's a short break, then the next (bigger, faster) wave starts.
 ##
 ##   BREAK -> SPAWNING (trickles humans in) -> FIGHTING (all spawned, waiting for the last kill) -> BREAK ...
@@ -65,9 +65,15 @@ enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 ## Cap on that bonus. 1.3 x 5.5 = 7.15 m/s, just above the Hulk's 7.0: late waves can catch you.
 @export var max_speed_multiplier: float = 1.3
 
-## Spawn zones just inside each end cap.
-const SPAWN_X := 37.0
-const SPAWN_Z_HALF := 3.0
+@export_group("Spawn points")
+## Soldiers come in at Marker3D nodes in the "spawn_points" group (the level scene owns them,
+## e.g. Level/SpawnPoints/West and East), taking turns in scene order. Each one lands at a
+## random spot within this spread (meters, x and z) around its marker.
+@export var spawn_spread: Vector2 = Vector2(2.0, 3.0)
+
+## Used only when the level has no spawn markers (e.g. a bare test scene): just inside the
+## old corridor's end caps.
+const FALLBACK_SPAWNS: Array[Vector3] = [Vector3(-37.0, 0.0, 0.0), Vector3(37.0, 0.0, 0.0)]
 
 var state: State = State.IDLE
 var wave: int = 0
@@ -77,7 +83,7 @@ var break_remaining: float = 0.0
 var alive: int = 0
 var _to_spawn: int = 0
 var _timer: float = 0.0
-var _next_side: float = -1.0
+var _next_spawn: int = 0
 var _rockets_left: int = 0
 var _ninjas_left: int = 0
 var _spawned_this_wave: int = 0
@@ -132,14 +138,10 @@ func speed_multiplier(n: int) -> float:
 	return minf(1.0 + speed_growth * (n - 1), max_speed_multiplier)
 
 
-## Spawns one human at the next end of the corridor. Public for tests and debug tools.
+## Spawns one human at the next spawn point. Public for tests and debug tools.
 func spawn_one(scene: PackedScene = null) -> Human:
 	var human: Human = (scene if scene else human_scene).instantiate()
-	human.position = Vector3(
-		_next_side * SPAWN_X + randf_range(-2.0, 2.0),
-		0.0,
-		randf_range(-SPAWN_Z_HALF, SPAWN_Z_HALF))
-	_next_side = -_next_side
+	human.position = next_spawn_position()
 	human.target = target
 	# Set before add_child: Human._ready() rolls its personal speed from move_speed.
 	human.move_speed *= speed_multiplier(maxi(wave, 1))
@@ -150,7 +152,24 @@ func spawn_one(scene: PackedScene = null) -> Human:
 	return human
 
 
-## One rocket soldier, at the next end of the corridor. Counts toward the wave like anyone.
+## Where the next soldier comes in: the next spawn marker in turn, plus a random spread.
+func next_spawn_position() -> Vector3:
+	var points := spawn_points()
+	var base: Vector3 = points[_next_spawn % points.size()]
+	_next_spawn += 1
+	return base + Vector3(randf_range(-spawn_spread.x, spawn_spread.x), 0.0, randf_range(-spawn_spread.y, spawn_spread.y))
+
+
+## World positions of the level's spawn markers, in scene order (fallback if it has none).
+func spawn_points() -> Array[Vector3]:
+	var points: Array[Vector3] = []
+	for node in get_tree().get_nodes_in_group("spawn_points"):
+		if node is Node3D:
+			points.append((node as Node3D).global_position)
+	return points if not points.is_empty() else FALLBACK_SPAWNS
+
+
+## One rocket soldier, at the next spawn point. Counts toward the wave like anyone.
 func spawn_rocket_soldier() -> Human:
 	_rockets_left = maxi(_rockets_left - 1, 0)
 	var soldier := spawn_one(rocket_soldier_scene)
@@ -158,7 +177,7 @@ func spawn_rocket_soldier() -> Human:
 	return soldier
 
 
-## One ninja, at the next end of the corridor. Counts toward the wave like anyone.
+## One ninja, at the next spawn point. Counts toward the wave like anyone.
 func spawn_ninja() -> Human:
 	_ninjas_left = maxi(_ninjas_left - 1, 0)
 	var ninja := spawn_one(ninja_scene)

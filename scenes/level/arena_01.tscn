@@ -1,0 +1,128 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://assets/materials/painterly/asphalt.tres" id="1_asphalt"]
+[ext_resource type="Material" path="res://assets/materials/painterly/brick.tres" id="2_brick"]
+[ext_resource type="Shader" path="res://shaders/grid_floor.gdshader" id="3_grid"]
+[ext_resource type="PackedScene" path="res://scenes/level/pillar.tscn" id="4_pillar"]
+[ext_resource type="PackedScene" path="res://scenes/props/throwable_car.tscn" id="5_car"]
+
+[sub_resource type="ShaderMaterial" id="Mat_floor"]
+render_priority = 0
+shader = ExtResource("3_grid")
+shader_parameter/base_color = Color(0.2, 0.21, 0.24, 1)
+shader_parameter/line_color = Color(0.34, 0.35, 0.4, 1)
+shader_parameter/cell_size = 2.0
+shader_parameter/line_width = 0.05
+
+[sub_resource type="BoxMesh" id="Mesh_floor"]
+material = SubResource("Mat_floor")
+size = Vector3(80, 1, 8)
+
+[sub_resource type="BoxShape3D" id="Shape_floor"]
+size = Vector3(80, 1, 8)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.32, 0.29, 0.27, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Mesh_wall"]
+material = SubResource("Mat_wall")
+size = Vector3(80, 4, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_wall"]
+size = Vector3(80, 4, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rail"]
+albedo_color = Color(0.5, 0.42, 0.3, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Mesh_rail"]
+material = SubResource("Mat_rail")
+size = Vector3(80, 1.2, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_rail"]
+size = Vector3(80, 1.2, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_cap"]
+material = SubResource("Mat_wall")
+size = Vector3(1, 4, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_cap"]
+size = Vector3(1, 4, 10)
+
+[node name="Arena01" type="Node3D"]
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03263092, 0.039326668, -0.02821827)
+mesh = SubResource("Mesh_floor")
+surface_material_override/0 = ExtResource("1_asphalt")
+
+[node name="Collision" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("Shape_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -4.5)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="WallNorth"]
+mesh = SubResource("Mesh_wall")
+surface_material_override/0 = ExtResource("2_brick")
+
+[node name="Collision" type="CollisionShape3D" parent="WallNorth"]
+shape = SubResource("Shape_wall")
+
+[node name="RailSouth" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 4.5)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="RailSouth"]
+mesh = SubResource("Mesh_rail")
+surface_material_override/0 = ExtResource("2_brick")
+
+[node name="Collision" type="CollisionShape3D" parent="RailSouth"]
+shape = SubResource("Shape_rail")
+
+[node name="CapWest" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40.5, 2, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="CapWest"]
+mesh = SubResource("Mesh_cap")
+surface_material_override/0 = ExtResource("2_brick")
+
+[node name="Collision" type="CollisionShape3D" parent="CapWest"]
+shape = SubResource("Shape_cap")
+
+[node name="CapEast" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40.5, 2, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="CapEast"]
+mesh = SubResource("Mesh_cap")
+surface_material_override/0 = ExtResource("2_brick")
+
+[node name="Collision" type="CollisionShape3D" parent="CapEast"]
+shape = SubResource("Shape_cap")
+
+[node name="PillarEast" parent="." instance=ExtResource("4_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -1.5)
+
+[node name="PillarWest" parent="." instance=ExtResource("4_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 1.5)
+
+[node name="Car" parent="." instance=ExtResource("5_car")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.5, 0, 2.2)
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="West" type="Marker3D" parent="SpawnPoints" groups=["spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37, 0, 0)
+gizmo_extents = 1.5
+
+[node name="East" type="Marker3D" parent="SpawnPoints" groups=["spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 0, 0)
+gizmo_extents = 1.5

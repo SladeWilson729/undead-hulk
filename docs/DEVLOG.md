@@ -396,6 +396,23 @@ The soak test now handles ninjas.
 **Tests:** steps 18 and 19 pass. A new rendered check (`shottrail.gd`, it needs a renderer) passes 6 of 6: trail on, ~5 ghosts while running and while flipping, none during the combo, and every ghost cleaned up after she dies.
 - Step 18's "hands on the grips while running" is borderline flaky: it read 0.020 m against a < 0.02 limit once, then passed 3 of 3. It depends on where in the stride he spawns.
 
+**Step 14 (scene split), 2026-10-08.** main.tscn is now the game shell; the arena is its own scene. No gameplay changes.
+- `scenes/level/main.tscn` keeps what every level shares: WorldEnvironment, Sun, Hulk, Enemies, Deaths, Spawner, CameraRig, HUD, Music, Sfx. `Level` is now an instance of the arena scene.
+- `scenes/level/arena_01.tscn` is the corridor: Floor, WallNorth, RailSouth, CapWest, CapEast, the two pillars, the Car, and `SpawnPoints` (West and East markers). Node names are unchanged, so `Level/Car`, `Level/PillarEast` and the rest still work.
+- `scenes/level/pillar.tscn` is a reusable breakable pillar: drag it into any level and set `size` in the Inspector.
+- Spawning reads Marker3D nodes in the `spawn_points` group, taking turns in scene order, each with a random spread (`WaveSpawner.spawn_spread`, 2 x 3 m). A new level sets its own spawn points by placing markers; no code changes. If a level has no markers, the old corridor ends are the fallback.
+- Lighting and environment stay in main for now. If levels later need their own mood, move them into the level scene. Only one WorldEnvironment can be active, so stacked sections should share one.
+
+**Tests:** step 20 passed all 11 checks. It covers:
+- the arena is an instance, and every wall, cap, pillar and the car sit exactly where they were
+- the pillars are pillar.tscn instances and still breakable; the floor keeps its asphalt
+- spawns alternate between the markers within the spread; moving a marker moves the spawns; no markers falls back
+
+A rendered frame matches the old view. Steps 4-13, 15, 16, 18 and 19 pass. Pre-existing flaky or failing ones, unchanged by the split:
+- step 3: the known swarm count
+- step 14: the pound-line check (already failing)
+- step 17: "5 of 6 got round" failed 1 in 3 runs with the old main.tscn and 2 in 3 with the new one, so it's randomness. It's worth a look later.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -435,5 +452,6 @@ The soak test now handles ninjas.
 - **Camera height/angle:** the transform on CameraRig/Camera3D. It currently sits 16 m up and 11 m back, tilted down about 55 degrees.
 - **NinjaSoldier (ninja_soldier.tscn):** move_speed, stalk_range, stalk_time_min/max, pounce_min/max, flip_damage, slash_damage, strike_reach, flip_speed, slash_speed, retreat_time, katana_scale, grip_point, blade_splay_degrees
 - **Spawner > Ninjas:** ninja_scene, ninjas_per_wave, ninja_spawn_at
+- **Spawner > Spawn points:** spawn_spread. The markers themselves live in the level scene (`Level/SpawnPoints`)
 - **Main > Ninja:** ninja_hit_shake, ninja_flip_shake, ninja_flip_hit_stop
 - **AfterimageTrail (created in code by the ninja, so edit the defaults at the top of `scripts/vfx/afterimage_trail.gd`):** interval, lifetime, min_speed, smoke_color, rim_color, base_alpha, grow, enabled. Shader extras in `shaders/afterimage.gdshader`: rim_power, smoke_scale, fade_in

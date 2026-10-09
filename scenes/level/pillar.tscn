@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/level/breakable_pillar.gd" id="1_pillar"]
+
+[node name="Pillar" type="StaticBody3D"]
+script = ExtResource("1_pillar")
