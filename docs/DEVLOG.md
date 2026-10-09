@@ -457,6 +457,23 @@ Step 14's long-standing failure was the test: it fired a ground pound mid-punch,
 
 Steps 4-21 pass (step 7 now expects the score on the HUD line). Step 3 is still the known flaky swarm count.
 
+**Step 17 (run summary popup), 2026-10-08.** Built by Codex, reviewed and revised by Claude.
+- `scripts/ui/run_end_popup.gd` (`RunEndPopup`) is a comic-page summary drawn in code, scaled to fit any window.
+- It shows:
+  - the score and your personal best (saved to `user://run_best_v1.cfg`)
+  - kills by cause, wave and kill count
+  - the point breakdown (kills, bounties, style, wave clears), juggles and wall splats, specials killed
+  - augments claimed
+- The HUD shows it 1.2 s after death and calls `Run.finish()`, which freezes the score and saves a new best. NEW RUN (or R) reloads the scene for a fresh run.
+- Codex changed the scoring:
+  - Bounties and style points are now also multiplied by the wave.
+  - Stomped went from 10 to 15.
+  - The wave step went to 1.0. Will chose **0.25** instead: x2.0 on wave 5, x4.25 on wave 14.
+- Claude's revisions: the button says NEW RUN; the subtitle reads "fell on wave N of 15"; there's a victory version (SMASHED IT!) for when the boss dies; Fell has its own row; the headline auto-fits the banner; an AUGMENTS CLAIMED row was added.
+
+**Tests:** steps 3-22 all pass, the step 3 swarm count included this time. Steps 7 and 10 now check the popup instead of the old game-over text; step 22 expects the 0.25 multiplier. Codex's `tools/run_end_preview.gd` and `tools/run_end_integration.gd` pass with the new math. Death and victory versions were rendered with full sample data and inspected.
+- Known gap: the fonts are system fonts (Impact, Trebuchet), so machines without them fall back to a plain font. Bundle a font file before shipping.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max

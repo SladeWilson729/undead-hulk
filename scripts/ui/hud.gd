@@ -22,6 +22,9 @@ var _eat: EatSoldier
 var _spawner: WaveSpawner
 var _run: Run
 var _banner_tween: Tween
+var _ended: bool = false
+## The run summary once it's up (null before that).
+var end_popup: RunEndPopup
 
 
 func bind(health: Health) -> void:
@@ -61,6 +64,8 @@ func bind_spawner(spawner: WaveSpawner) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _ended:
+		return
 	_update_break_banner()
 	_update_eat_label()
 	if _pound == null:
@@ -122,8 +127,16 @@ func _on_wave_started(wave: int, _size: int) -> void:
 
 
 func _on_died() -> void:
-	if _spawner:
-		game_over.text = "THE HULK IS DOWN\nReached wave %d  ·  %d kills\nPress R to rise again" % [_spawner.wave, _spawner.kills]
+	_ended = true
+	if _run:
+		_run.finish()
+	if _banner_tween:
+		_banner_tween.kill()
 	banner.visible = false
 	await get_tree().create_timer(game_over_delay).timeout
-	game_over.visible = true
+	$Margin.hide()
+	wave_label.hide()
+	var popup := RunEndPopup.new()
+	end_popup = popup
+	add_child(popup)
+	popup.present(_run.summary() if _run else {})
