@@ -3,10 +3,13 @@
 importer="animation_library"
 importer_version=1
 type="AnimationLibrary"
+uid="uid://ck18yutnb3kj8"
+path="res://.godot/imported/Running Arc.fbx-29d5cda7fb31c8aa45df2827e8a6adae.res"
 
 [deps]
 
 source_file="res://assets/humans/ninja/Running Arc.fbx"
+dest_files=["res://.godot/imported/Running Arc.fbx-29d5cda7fb31c8aa45df2827e8a6adae.res"]
 
 [params]
 

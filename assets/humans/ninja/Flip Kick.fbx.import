@@ -3,10 +3,13 @@
 importer="animation_library"
 importer_version=1
 type="AnimationLibrary"
+uid="uid://bbqms36cywke2"
+path="res://.godot/imported/Flip Kick.fbx-5562e946647c97648c3e997e0a8357db.res"
 
 [deps]
 
 source_file="res://assets/humans/ninja/Flip Kick.fbx"
+dest_files=["res://.godot/imported/Flip Kick.fbx-5562e946647c97648c3e997e0a8357db.res"]
 
 [params]
 

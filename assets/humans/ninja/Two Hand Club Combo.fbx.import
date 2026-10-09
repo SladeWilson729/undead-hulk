@@ -3,10 +3,13 @@
 importer="animation_library"
 importer_version=1
 type="AnimationLibrary"
+uid="uid://dsxb8xermai4m"
+path="res://.godot/imported/Two Hand Club Combo.fbx-e041746ce313c968de9b29874b0a51a5.res"
 
 [deps]
 
 source_file="res://assets/humans/ninja/Two Hand Club Combo.fbx"
+dest_files=["res://.godot/imported/Two Hand Club Combo.fbx-e041746ce313c968de9b29874b0a51a5.res"]
 
 [params]
 
