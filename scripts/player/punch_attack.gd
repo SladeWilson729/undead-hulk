@@ -109,7 +109,8 @@ func _strike() -> void:
 	if juggles > 0:
 		juggled.emit(juggles)
 	_smash_breakables()
-	punched.emit(targets.size() + juggles)
+	var props := _hit_props(forward)
+	punched.emit(targets.size() + juggles + props)
 
 
 ## Pillars (anything in the "breakables" group) inside the cone get smashed. Reach is
@@ -122,6 +123,19 @@ func _smash_breakables() -> void:
 		if _in_cone(pillar.global_position, reach + pillar.footprint_radius()):
 			# Rubble flies straight away from the Hulk, at fist height.
 			pillar.take_hit(pillar.global_position - hulk.global_position, 1.6, 1.0)
+
+
+## Trash cans, carts and barrels in the cone get batted away. Returns how many.
+func _hit_props(forward: Vector3) -> int:
+	var count := 0
+	for node in get_tree().get_nodes_in_group("smash_props"):
+		var prop := node as SmashProp
+		if prop == null or prop.state == SmashProp.State.GONE:
+			continue
+		if _in_cone(prop.global_position, reach + 0.6):
+			prop.punch_from(hulk.global_position, forward)
+			count += 1
+	return count
 
 
 ## Juggle: any dead body still falling through the cone explodes.

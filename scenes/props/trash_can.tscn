@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/smash_prop.gd" id="1_prop"]
+[ext_resource type="PackedScene" path="res://assets/props/rusty+trash+can+3d+model.glb" id="2_model"]
+
+[sub_resource type="PhysicsMaterial" id="Phys_prop"]
+friction = 0.6
+bounce = 0.25
+
+[sub_resource type="CylinderShape3D" id="Shape_body"]
+height = 1.1
+radius = 0.45
+
+[node name="TrashCan" type="RigidBody3D"]
+mass = 15.0
+physics_material_override = SubResource("Phys_prop")
+linear_damp = 0.3
+angular_damp = 2.5
+script = ExtResource("1_prop")
+kind = 0
+punch_speed = 19.0
+punch_lift = 2.5
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("Shape_body")

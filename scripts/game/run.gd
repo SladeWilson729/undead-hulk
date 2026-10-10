@@ -20,6 +20,10 @@ signal score_changed(score: int)
 @export var points_stomped: int = 15
 ## Foolsball Helmet charge.
 @export var points_tackled: int = 20
+## Thrown, or hit by a thrown soldier.
+@export var points_yeeted: int = 25
+## A fuel barrel the Hulk set off (a rocket-triggered barrel counts as Friendly Fire).
+@export var points_blown_up: int = 20
 @export var points_eaten: int = 30
 @export var points_crushed: int = 20
 @export var points_buried: int = 25
@@ -90,6 +94,8 @@ func points_for(cause: int) -> int:
 		KillCause.SMASHED: return points_smashed
 		KillCause.STOMPED: return points_stomped
 		KillCause.TACKLED: return points_tackled
+		KillCause.YEETED: return points_yeeted
+		KillCause.BLOWN_UP: return points_blown_up
 		KillCause.EATEN: return points_eaten
 		KillCause.CRUSHED: return points_crushed
 		KillCause.BURIED: return points_buried
@@ -97,6 +103,20 @@ func points_for(cause: int) -> int:
 		KillCause.FELL: return points_fell
 		KillCause.GLITTER_BOMBED: return points_glitter_bombed
 	return points_other
+
+
+## A kill already recorded as one cause turns out to be another (grabbed to eat, then thrown).
+## Moves the count and the score difference; bounties are untouched.
+func reclassify_kill(from_cause: int, to_cause: int) -> void:
+	if ended or kills_by_cause.get(from_cause, 0) <= 0:
+		return
+	kills_by_cause[from_cause] -= 1
+	kills_by_cause[to_cause] = kills_by_cause.get(to_cause, 0) + 1
+	var diff := roundi((points_for(to_cause) - points_for(from_cause)) * wave_multiplier())
+	if diff != 0:
+		score += diff
+		kill_points_total += diff
+		score_changed.emit(score)
 
 
 func record_kill(human: Human) -> void:

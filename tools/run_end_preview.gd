@@ -47,7 +47,7 @@ func check() -> void:
 		return
 	var popup = load("res://scripts/ui/run_end_popup.gd").new()
 	root.add_child(popup)
-	popup.present({"score":12870,"best":12870,"new_best":true,"wave":7,"kills":68,"waves_cleared":6,"kills_by_cause":[["Smashed",23],["Stomped",14],["Tackled",6],["Eaten",4],["Crushed",10],["Buried",8],["Friendly Fire",9],["Fell",2]],"augments":["Thick Skull","Long Arms","Bottomless Gut","Bobbleheads","Aftershock"],"kill_points":6870,"bounty_points":1800,"style_points":2100,"wave_points":2100,"juggles":12,"splats":8,"specials":{"Rocket soldier":4,"Ninja":2}})
+	popup.present({"score":12870,"best":12870,"new_best":true,"wave":7,"kills":68,"waves_cleared":6,"kills_by_cause":[["Smashed",23],["Stomped",14],["Tackled",6],["Eaten",4],["Yeeted",7],["Blown Up",9],["Crushed",10],["Buried",8],["Friendly Fire",9],["Fell",2]],"augments":["Thick Skull","Long Arms","Bottomless Gut","Bobbleheads","Aftershock"],"kill_points":6870,"bounty_points":1800,"style_points":2100,"wave_points":2100,"juggles":12,"splats":8,"specials":{"Rocket soldier":4,"Ninja":2}})
 	await create_timer(0.5).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://docs/run-end-popup.png")

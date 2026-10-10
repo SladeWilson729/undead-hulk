@@ -48,6 +48,10 @@ enum Phase { READY, RISING, SLAMMING, COOLDOWN }
 @export var outward_edge: float = 11.0
 ## Knockback speed for survivors in the outer ring.
 @export var shove_speed: float = 9.0
+## Trash cans, carts and barrels in the kill radius fly out this fast and this high (m/s).
+## Mostly outward: a barrel popped straight up comes down on his own head.
+@export var prop_outward: float = 11.0
+@export var prop_lift: float = 7.0
 
 var phase: Phase = Phase.READY
 var cooldown_remaining: float = 0.0
@@ -149,6 +153,17 @@ func _impact() -> void:
 		to_pillar.y = 0.0
 		if to_pillar.length() <= kill_radius + pillar.footprint_radius():
 			pillar.take_hit(to_pillar, 0.5, 0.8)
+
+	# Street junk in the blast pops up and out (and barrels light).
+	for node in get_tree().get_nodes_in_group("smash_props"):
+		var prop := node as SmashProp
+		if prop == null or prop.state == SmashProp.State.GONE:
+			continue
+		var to_prop := prop.global_position - center
+		to_prop.y = 0.0
+		if to_prop.length() <= kill_radius:
+			var away := to_prop.normalized() if to_prop.length() > 0.05 else Vector3.FORWARD
+			prop.hit(away * prop_outward + Vector3.UP * prop_lift)
 
 	_spawn_shockwave(center)
 	pounded.emit(kills)

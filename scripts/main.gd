@@ -27,6 +27,15 @@ extends Node3D
 ## Fraction of max HP healed every time a wave is cleared (0.25 = a quarter of the bar).
 @export_range(0.0, 1.0) var wave_clear_heal: float = 0.25
 
+@export_group("Yeet")
+## Kick per soldier a thrown soldier flattens.
+@export var yeet_hit_shake: float = 0.15
+
+@export_group("Street props")
+## A fuel barrel going off: shake and impact kick (0..1).
+@export var barrel_shake: float = 0.55
+@export var barrel_kick: float = 0.5
+
 @export_group("Tough enemies")
 ## Camera kick when a ninja or rocket soldier takes a hit and lives.
 @export var special_hurt_shake: float = 0.12
@@ -99,6 +108,24 @@ func _ready() -> void:
 		create_tween().tween_property(music, "volume_db", music_death_duck_db, 1.5))
 	for pillar in get_tree().get_nodes_in_group("breakables"):
 		pillar.smashed.connect(_on_smashed)
+	# Grab-and-throw: the grab already counted as Eaten; the throw makes it Yeeted.
+	hulk.eat.thrown.connect(func(_body: Node3D) -> void:
+		run.reclassify_kill(KillCause.EATEN, KillCause.YEETED)
+		camera_rig.add_shake(0.15))
+	hulk.eat.yeet_hit.connect(func(at: Vector3) -> void:
+		sfx.play("punch_hit", at)
+		camera_rig.add_shake(yeet_hit_shake))
+	# Street junk: trash cans, carts, fuel barrels.
+	for node in get_tree().get_nodes_in_group("smash_props"):
+		var prop := node as SmashProp
+		prop.exploded.connect(func(at: Vector3, hulk_damage: int) -> void:
+			sfx.play("rocket_boom", at)
+			camera_rig.add_shake(barrel_shake + (rocket_hit_shake if hulk_damage > 0 else 0.0))
+			camera_rig.add_kick(barrel_kick))
+		prop.hit_soldier.connect(func(at: Vector3) -> void: sfx.play("punch_hit", at))
+		prop.impacted.connect(func(at: Vector3, speed: float) -> void:
+			sfx.play("car_impact", at, clampf((speed - 14.0) * 0.5, -8.0, 0.0) - 4.0))
+		spawner.wave_started.connect(func(_wave: int, _size: int) -> void: prop.reset_home())
 	for car in get_tree().get_nodes_in_group("throwables"):
 		car.thrown.connect(func() -> void: camera_rig.add_shake(0.2))
 		car.crushed.connect(_on_car_crushed)

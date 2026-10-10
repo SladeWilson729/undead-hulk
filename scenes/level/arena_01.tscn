@@ -5,6 +5,9 @@
 [ext_resource type="Shader" path="res://shaders/grid_floor.gdshader" id="3_grid"]
 [ext_resource type="PackedScene" path="res://scenes/level/pillar.tscn" id="4_pillar"]
 [ext_resource type="PackedScene" path="res://scenes/props/throwable_car.tscn" id="5_car"]
+[ext_resource type="PackedScene" path="res://scenes/props/trash_can.tscn" id="6_can"]
+[ext_resource type="PackedScene" path="res://scenes/props/shopping_cart.tscn" id="7_cart"]
+[ext_resource type="PackedScene" path="res://scenes/props/fuel_barrel.tscn" id="8_barrel"]
 
 [sub_resource type="ShaderMaterial" id="Mat_floor"]
 render_priority = 0
@@ -116,6 +119,29 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 1.5)
 
 [node name="Car" parent="." instance=ExtResource("5_car")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.5, 0, 2.2)
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="TrashCanA" parent="Props" instance=ExtResource("6_can")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -3.2)
+
+[node name="TrashCanB" parent="Props" instance=ExtResource("6_can")]
+transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, 16, 0, 3.2)
+
+[node name="TrashCanC" parent="Props" instance=ExtResource("6_can")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, -3.2)
+
+[node name="CartA" parent="Props" instance=ExtResource("7_cart")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -20, 0, 3.0)
+
+[node name="CartB" parent="Props" instance=ExtResource("7_cart")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11, 0, -3.0)
+
+[node name="BarrelA" parent="Props" instance=ExtResource("8_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, 0, -2.8)
+
+[node name="BarrelB" parent="Props" instance=ExtResource("8_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 2.8)
 
 [node name="SpawnPoints" type="Node3D" parent="."]
 

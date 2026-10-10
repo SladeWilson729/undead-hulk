@@ -12,12 +12,25 @@ extends Node
 ##   then cooldown.
 ## He's nearly rooted the whole time (~1.9 s) and soldiers keep hitting him: eating is a
 ## gamble you take when you can afford the hits, not a free heal.
+##
+## Or throw him: click (punch) any time before the chomp and he hurls the soldier where he's
+## aiming instead. No heal, but the body is a missile: it flattens up to `throw_max_hits`
+## soldiers it flies through (all counted as Yeeted, him included). Clicking during the reach
+## queues the throw for the moment the soldier is in his hand.
 
 signal grabbed
 ## Chomp. at = mouth position.
 signal eaten(at: Vector3)
+## The throw started (the click). For the voice.
+signal throw_started
+## The soldier left his hand as a missile.
+signal thrown(body: Node3D)
+## A thrown soldier flattened another one.
+signal yeet_hit(at: Vector3)
 
-enum Phase { READY, REACH, LIFT, EAT, SWALLOW, COOLDOWN }
+enum Phase { READY, REACH, LIFT, EAT, SWALLOW, THROW, COOLDOWN }
+
+const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 
 @export_group("Grab")
 ## How far (meters, flat) from the Hulk's center a soldier can be grabbed.
@@ -35,6 +48,19 @@ enum Phase { READY, REACH, LIFT, EAT, SWALLOW, COOLDOWN }
 ## Movement multiplier while grabbing and eating.
 @export_range(0.0, 1.0) var move_while_eating: float = 0.1
 
+@export_group("Throw")
+## Throw speed (m/s) toward where he's aiming, and the upward part. Slightly down: he lets
+## go about 3.2 m up, so this drops the body through soldier height from ~5 m out to ~15 m
+## where it lands, instead of sailing over the crowd.
+@export var throw_speed: float = 24.0
+@export var throw_lift: float = -3.0
+## The thrown body flattens soldiers it passes within this distance (m, flat)...
+@export var throw_hit_radius: float = 1.1
+## ...while it's still moving this fast (m/s)...
+@export var throw_kill_speed: float = 6.0
+## ...up to this many, then it's just a body.
+@export var throw_max_hits: int = 3
+
 var phase: Phase = Phase.READY
 var cooldown_remaining: float = 0.0
 
@@ -48,6 +74,9 @@ var _slide_t: float = 0.0
 var _skeleton: Skeleton3D
 var _right_hand: int = -1
 var _head: int = -1
+var _throw_queued: bool = false
+## Thrown bodies still hunting: [{"body": FlyingBody, "hits": int}]
+var _missiles: Array[Dictionary] = []
 
 @onready var hulk: Hulk = get_parent()
 
@@ -66,6 +95,9 @@ func is_busy() -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	_update_missiles()
+	if (phase == Phase.REACH or phase == Phase.LIFT or phase == Phase.EAT) and Input.is_action_just_pressed("punch"):
+		throw()
 	match phase:
 		Phase.READY:
 			if Input.is_action_just_pressed("eat"):
@@ -77,6 +109,9 @@ func _physics_process(delta: float) -> void:
 				_slide_t = 0.0
 				_slide_from = _victim.global_position if is_instance_valid(_victim) else Vector3.ZERO
 				_timer = hulk.animator.pickup_duration() - _grab_delay
+				if _throw_queued:
+					_throw_queued = false
+					_start_throw()
 		Phase.LIFT:
 			_timer -= delta
 			if _timer <= 0.0:
@@ -92,6 +127,13 @@ func _physics_process(delta: float) -> void:
 		Phase.SWALLOW:
 			_timer -= delta
 			if _timer <= 0.0:
+				phase = Phase.COOLDOWN
+				cooldown_remaining = cooldown
+				hulk.move_speed_multiplier = 1.0
+		Phase.THROW:
+			_timer -= delta
+			if _timer <= 0.0:
+				_release()
 				phase = Phase.COOLDOWN
 				cooldown_remaining = cooldown
 				hulk.move_speed_multiplier = 1.0
@@ -118,9 +160,77 @@ func start() -> bool:
 	_grab_delay = hulk.animator.play_pickup()
 	_timer = _grab_delay
 	phase = Phase.REACH
+	_throw_queued = false
 	hulk.move_speed_multiplier = move_while_eating
 	grabbed.emit()
 	return true
+
+
+## Throw the soldier he's holding instead of eating him. Public so tests can call it.
+## During the reach it's queued until the soldier is in his hand.
+func throw() -> void:
+	match phase:
+		Phase.REACH:
+			_throw_queued = true
+		Phase.LIFT, Phase.EAT:
+			_start_throw()
+
+
+func _start_throw() -> void:
+	phase = Phase.THROW
+	_slide_t = 1.0  # Already in hand.
+	_timer = hulk.animator.play_throw()
+	hulk.move_speed_multiplier = move_while_eating
+	throw_started.emit()
+
+
+func _release() -> void:
+	if not is_instance_valid(_victim):
+		return
+	var director := get_tree().get_first_node_in_group("death_director") as DeathDirector
+	var body: FlyingBody = FLYING_BODY.instantiate()
+	var parent: Node = director if director else hulk.get_parent()
+	parent.add_child(body)
+	body.global_transform = Transform3D(_victim.global_basis, _victim.global_position + Vector3.UP * 0.9)
+	_victim.reparent(body, true)
+	body.director = director
+	body.gib_material = _victim_material
+	body.reset_physics_interpolation()
+	var forward := -hulk.global_basis.z
+	forward.y = 0.0
+	body.launch(forward.normalized() * throw_speed + Vector3.UP * throw_lift)
+	_missiles.append({"body": body, "hits": 0})
+	_victim = null
+	thrown.emit(body)
+
+
+## Thrown bodies flatten whoever they fly through.
+func _update_missiles() -> void:
+	for i in range(_missiles.size() - 1, -1, -1):
+		var m: Dictionary = _missiles[i]
+		var body = m["body"]
+		if not is_instance_valid(body) or not body.is_inside_tree():
+			_missiles.remove_at(i)
+			continue
+		var v: Vector3 = body.get_velocity()
+		if v.length() < throw_kill_speed or m["hits"] >= throw_max_hits:
+			_missiles.remove_at(i)
+			continue
+		var c: Vector3 = body.get_center()
+		for node in get_tree().get_nodes_in_group("enemies"):
+			var human := node as Human
+			if human == null:
+				continue
+			var p := human.global_position
+			if c.y > p.y + 2.8 or c.y < p.y - 0.3:
+				continue
+			if Vector2(c.x - p.x, c.z - p.z).length() > throw_hit_radius:
+				continue
+			human.kill(Vector3(v.x, 0.0, v.z) * 0.6 + Vector3.UP * 5.0, KillCause.YEETED)
+			yeet_hit.emit(p + Vector3.UP * 1.2)
+			m["hits"] += 1
+			if m["hits"] >= throw_max_hits:
+				break
 
 
 func _find_target() -> Human:
@@ -150,7 +260,7 @@ func _find_target() -> Human:
 func _process(delta: float) -> void:
 	if not is_instance_valid(_victim) or _skeleton == null or _right_hand < 0:
 		return
-	if phase == Phase.LIFT or phase == Phase.EAT:
+	if phase == Phase.LIFT or phase == Phase.EAT or phase == Phase.THROW:
 		var hang := _bone_pos(_right_hand) + Vector3.DOWN * hang_drop
 		# Slide into the fist over 0.12 s instead of teleporting.
 		_slide_t = minf(_slide_t + delta / 0.12, 1.0)
@@ -179,5 +289,6 @@ func _on_hulk_died() -> void:
 	if is_instance_valid(_victim):
 		_victim.queue_free()
 	_victim = null
+	_throw_queued = false
 	phase = Phase.READY
 	cooldown_remaining = 0.0

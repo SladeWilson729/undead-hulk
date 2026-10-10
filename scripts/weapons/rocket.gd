@@ -181,6 +181,9 @@ func _explode(at: Vector3) -> void:
 			var to_car := car.global_position + Vector3.UP * 0.8 - at
 			if to_car.length() <= blast_radius + 1.5:
 				car.apply_central_impulse((to_car.normalized() + Vector3.UP * 0.6) * car.mass * 3.0)
+	# Barrels caught in a soldier's own rocket blast go off, and those kills are on him too.
+	for node in get_tree().get_nodes_in_group("smash_props"):
+		(node as SmashProp).blasted(at, blast_radius, KillCause.FRIENDLY_FIRE)
 	Explosion.spawn(get_parent(), at, blast_radius * 0.85)
 	exploded.emit(at, damage)
 	# The smoke trail hangs around a moment after the rocket body is gone.

@@ -31,6 +31,7 @@
 | Punch | Left mouse (hold to keep punching) |
 | Ground pound | Right mouse or Space |
 | Pause / settings | Esc or P |
+| Throw a grabbed soldier (instead of eating him) | Left mouse while holding him (after F) |
 | Foolsball charge (once the augment is picked) | Shift |
 | Debug: take 10 damage | H (editor builds only) |
 | Restart after death | R |
@@ -633,6 +634,38 @@ Steps 3-26 and the soak pass. The menu was rendered and checked.
 
 **Waiting on Will's models** for the three interactables: throwing soldiers (no model needed), an explosive barrel, and trash cans / shopping carts.
 
+**Step 24 (street props and throwing soldiers), 2026-10-09.** Will's three Tripo models: `assets/props/rusty+trash+can+3d+model.glb`, `rusty+shopping+cart+3d+model.glb`, `flammable+barrel+3d+model.glb` (each 1 unit tall, bottom-center origin).
+- **`scripts/props/smash_prop.gd` (`SmashProp`, RigidBody3D)**, one script for three kinds, each with its own scene in `scenes/props/`:
+  - **Trash can** (`trash_can.tscn`, 1.1 m, 15 kg): a punch sends it out as a line drive (19 m/s) that flattens soldiers it passes.
+  - **Shopping cart** (`shopping_cart.tscn`, 1.15 m, 25 kg, low friction): rolls rather than flies (lift capped at 1.5 m/s) and bowls through a line, keeping 95% of its speed per soldier.
+  - **Fuel barrel** (`fuel_barrel.tscn`, 1.15 m, 60 kg): a punch lights a 1.4 s fuse and the barrel swells and throbs. It goes off on a hard landing, on hitting a soldier, or when the fuse runs out. The blast is 4.5 m. It hurts the Hulk too (12 close, 3 at the edge), chains to other barrels, blows up pillars and airborne bodies, and throws other props.
+  - **Who moves them:** punches (in the cone), the ground pound (pops them up and out), the Foolsball charge (punts them), walking into one (a nudge), and blasts. A rocket blast sets a barrel off where it stands, and those kills count as **Friendly Fire**.
+  - **At rest** they're world-layer cover, so soldiers path around them. **In flight** they're on layer 0 and hit soldiers by distance (like the thrown car), so they aren't stopped dead by the first capsule.
+  - Two physics fixes from testing:
+    - Lift off the floor at launch and use only a slow tumble. A fast end-over-end spin made the rim dig into the floor and kick the can skyward, over the heads it should hit.
+    - Linear and angular damping, so a can on its side doesn't roll forever.
+  - **Every wave start** puts back anything gone (exploded, fell off) or moved, with a pop-in.
+- **Placed in `arena_01.tscn` under `Props`:** trash cans at (-14, -3.2), (16, 3.2), (23, -3.2); carts at (-20, 3.0), (11, -3.0); barrels at (-27, -2.8) and (28, 2.8), near each spawn so streams of soldiers pass them.
+- **Throwing soldiers (`EatSoldier`):** after F grabs a soldier, a left click at any point before the chomp throws him where you're aiming instead of eating him. A click during the reach is queued until he's in hand.
+  - The throw uses the car throw clip and leaves the hand at 24 m/s, aimed slightly down (-3 m/s) so the body drops through soldier height from about 5 m to 15 m out.
+  - The body flattens up to 3 soldiers it passes. No heal; the same cooldown as eating.
+  - The grab had already counted the soldier as Eaten, so `Run.reclassify_kill()` moves it to **Yeeted** (count and the score difference). The Hulk says one of his throw lines.
+- **Two new kill causes**, **Yeeted** (25 points) and **Blown Up** (20). Flying cans and carts count as Crushed. With 11 causes, the run summary's damage report is now two columns, and causes with zero kills are greyed.
+- **Feedback:** barrels use the rocket boom with a 0.55 shake and a 0.5 kick; props hitting soldiers play a punch thud; props hitting walls play a quieter clang; yeet hits give a small shake.
+
+**Tests:** step 29 passed all 29 checks, 3 runs in a row. It covers:
+- the arena has every prop, and they start as cover
+- a punched can launches and flattens a soldier (Crushed), then comes to rest
+- a cart bowls 3 and stays on the floor
+- a punched barrel flies lit and blows up a group of 4 (Blown Up) without hurting the distant Hulk
+- a rocket blast sets a barrel off (Friendly Fire)
+- the next wave puts every prop back
+- walking into a can kicks it; a pound pops a can up and out
+- a queued throw flattens 3: him plus 3 counted as Yeeted, not Eaten, with no heal and the usual cooldown
+- without a click he still eats and heals
+
+Steps 3-28, Codex's checks and the soak pass. Step 17 failed once, its known flake, then passed 3 of 3. The can, cart, barrel and throw were rendered from the game camera and checked.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -691,3 +724,8 @@ Steps 3-26 and the soak pass. The menu was rendered and checked.
 - **CameraRig > Impact kick:** kick_fov, kick_drop, kick_time
 - **Main > Hit feel:** pound_miss_shake, pound_kick; **Main > Foolsball charge:** bonk_kick
 - **Main > Survival:** wave_clear_heal
+- **SmashProp (each prop scene in scenes/props/):** punch_speed, punch_lift, nudge, kill_speed, hit_radius, keep_speed; barrels: fuse, impact_detonate_speed, blast_radius, max_damage, min_damage, blast_launch. Mass, damping and the physics material are on the RigidBody in each scene.
+- **GroundPound:** prop_outward, prop_lift
+- **Hulk/EatSoldier > Throw:** throw_speed, throw_lift, throw_hit_radius, throw_kill_speed, throw_max_hits
+- **Run:** points_yeeted, points_blown_up
+- **Main > Street props:** barrel_shake, barrel_kick; **Main > Yeet:** yeet_hit_shake

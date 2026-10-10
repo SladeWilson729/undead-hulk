@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/smash_prop.gd" id="1_prop"]
+[ext_resource type="PackedScene" path="res://assets/props/rusty+shopping+cart+3d+model.glb" id="2_model"]
+
+[sub_resource type="PhysicsMaterial" id="Phys_prop"]
+friction = 0.08
+bounce = 0.35
+
+[sub_resource type="BoxShape3D" id="Shape_body"]
+size = Vector3(0.78, 1.1, 1.14)
+
+[node name="ShoppingCart" type="RigidBody3D"]
+mass = 25.0
+physics_material_override = SubResource("Phys_prop")
+linear_damp = 0.2
+angular_damp = 3.0
+script = ExtResource("1_prop")
+kind = 1
+punch_speed = 17.0
+punch_lift = 1.0
+kill_speed = 4.0
+hit_radius = 1.1
+keep_speed = 0.95
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(1.15, 0, 0, 0, 1.15, 0, 0, 0, 1.15, 0, 0, 0)
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.57, 0)
+shape = SubResource("Shape_body")

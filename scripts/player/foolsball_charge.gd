@@ -246,6 +246,14 @@ func _hit_breakables(delta: float) -> void:
 			pillar.take_hit(direction, 1.5, 1.2)
 			hulk.add_collision_exception_with(pillar)
 			_plowed.append(pillar)
+	for node in get_tree().get_nodes_in_group("smash_props"):
+		var prop := node as SmashProp
+		if prop == null or prop.state == SmashProp.State.GONE:
+			continue
+		var to_prop := prop.global_position - hulk.global_position
+		to_prop.y = 0.0
+		if to_prop.dot(direction) > 0.0 and to_prop.length() <= ahead + 0.5:
+			prop.punch_from(hulk.global_position, direction, 1.3)
 	for node in get_tree().get_nodes_in_group("throwables"):
 		var car := node as ThrowableCar
 		if car == null or not car.can_pick_up():

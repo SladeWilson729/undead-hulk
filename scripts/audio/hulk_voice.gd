@@ -78,6 +78,7 @@ func _ready() -> void:
 	hulk.get_node("CarryThrow").lifted.connect(func() -> void: say(lift_lines, Priority.ACTION))
 	hulk.get_node("CarryThrow").throw_started.connect(func() -> void: say(throw_lines, Priority.ACTION))
 	hulk.get_node("EatSoldier").grabbed.connect(func() -> void: say(eat_lines, Priority.ACTION))
+	hulk.get_node("EatSoldier").throw_started.connect(func() -> void: say(throw_lines, Priority.ACTION))
 	hulk.get_node("FoolsballCharge").charged.connect(func() -> void: say(charge_lines, Priority.ACTION))
 	hulk.get_node("Animator").victory_started.connect(func() -> void: say(victory_lines, Priority.VICTORY))
 	# Dead men tell no jokes.

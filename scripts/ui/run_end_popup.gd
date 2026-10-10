@@ -11,7 +11,7 @@ const DESIGN := Vector2(1080, 850)
 ## A full run: 14 standard waves, then wave 15 and the boss.
 const FINAL_WAVE := 15
 ## Kill rows, top to bottom. Must match KillCause.LABELS names.
-const CAUSE_ROWS := ["Smashed", "Stomped", "Tackled", "Eaten", "Crushed", "Buried", "Friendly Fire", "Fell", "Glitter Bombed"]
+const CAUSE_ROWS := ["Smashed", "Stomped", "Tackled", "Eaten", "Yeeted", "Crushed", "Buried", "Blown Up", "Friendly Fire", "Fell", "Glitter Bombed"]
 var sheet: Control
 var headline: SystemFont
 var body: SystemFont
@@ -125,21 +125,26 @@ func present(summary: Dictionary) -> void:
 	var counts: Dictionary = {}
 	for entry in data.get("kills_by_cause",[]):
 		counts[entry[0]] = entry[1]
+	# Two columns of kill rows (11 causes don't fit as one list), filled down then across.
 	var names: Array = CAUSE_ROWS
+	var per_col := ceili(names.size() / 2.0)
 	for i in names.size():
-		var y := 413 + i * 26
-		if i % 2 == 0:
+		var col := i / per_col
+		var row := i % per_col
+		var x := 59 + col * 258
+		var y := 414 + row * 38
+		if row % 2 == 0:
 			var strip := ColorRect.new()
-			strip.position = Vector2(59,y)
-			strip.size = Vector2(506,25)
+			strip.position = Vector2(x,y)
+			strip.size = Vector2(248,36)
 			strip.color = Color(0.23,0.24,0.18,0.07)
 			strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			sheet.add_child(strip)
-		_text("%02d" % (i+1),Rect2(70,y-1,40,26),14,Color("797662"))
-		_text(names[i],Rect2(115,y-3,337,28),19)
-		_text(str(counts.get(names[i],0)),Rect2(454,y-4,94,28),21,INK,true,HORIZONTAL_ALIGNMENT_RIGHT)
+		var n: int = counts.get(names[i],0)
+		_text(names[i],Rect2(x+10,y+2,170,32),_fit_size(names[i], body, 19, 168.0),INK if n > 0 else Color("66624f"))
+		_text(str(n),Rect2(x+170,y+1,70,32),22,INK,true,HORIZONTAL_ALIGNMENT_RIGHT)
 	var extras := int(counts.get("Other",0))
-	_text("Other mishaps: %d" % extras if extras > 0 else "Every body tells a story. A short one.",Rect2(70,654,490,26),14,Color("66624f"))
+	_text("Other mishaps: %d" % extras if extras > 0 else "Every body tells a story. A short one.",Rect2(70,648,490,26),14,Color("66624f"))
 	var items := [["Kill points",data.get("kill_points",0)],["Special bounties",data.get("bounty_points",0)],["Style bonuses",data.get("style_points",0)],["Wave clears (%d)" % data.get("waves_cleared",0),data.get("wave_points",0)]]
 	for i in items.size():
 		_text(items[i][0],Rect2(622,414+i*34,273,32),19)
