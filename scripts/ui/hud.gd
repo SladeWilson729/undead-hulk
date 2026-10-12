@@ -31,6 +31,11 @@ var end_popup: RunEndPopup
 ## The Esc menu while it's open (null otherwise).
 var pause_menu: PauseMenu
 var _health: Health
+## Boss fights: the Hulk whose distance to the open edge drives the red edge warning (null = off).
+var edge_watch: Hulk
+var _edge_glow: TextureRect
+var _edge_label: Label
+var _edge_t: float = 0.0
 
 
 func bind(health: Health) -> void:
@@ -81,6 +86,7 @@ func bind_spawner(spawner: WaveSpawner) -> void:
 
 
 func _process(_delta: float) -> void:
+	_update_edge_warning(_delta)
 	if _ended:
 		return
 	_update_break_banner()
@@ -184,6 +190,147 @@ func open_pause_menu() -> PauseMenu:
 	add_child(pause_menu)
 	pause_menu.closed.connect(func() -> void: pause_menu = null)
 	return pause_menu
+
+
+## Big centered banner (the wave banner's look) for the finale: "YOU WIN!", "...WAIT."
+## hold = seconds before it fades.
+func flash_banner(text: String, hold: float = 1.6, color: Color = Color(1, 1, 1)) -> void:
+	if _banner_tween:
+		_banner_tween.kill()
+	banner.visible = true
+	banner.text = text
+	banner.modulate = Color(color.r, color.g, color.b, 1.0)
+	banner.pivot_offset = banner.size * 0.5
+	banner.scale = Vector2(1.8, 1.8)
+	_banner_tween = create_tween()
+	_banner_tween.tween_property(banner, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_banner_tween.tween_interval(hold)
+	_banner_tween.tween_property(banner, "modulate:a", 0.0, 0.4)
+	_banner_tween.tween_callback(func() -> void:
+		banner.visible = false
+		banner.modulate = Color(1, 1, 1, 1))
+
+
+## The boss health bar across the top. Made on first use; show_boss_bar("") hides it.
+var _boss_box: Control
+var _boss_name: Label
+var _boss_bar: ProgressBar
+
+
+## Red glow up from the bottom of the screen (the open rail is the screen's bottom edge) and
+## "EDGE!" when a boss hit would throw him over. It fades in over the meter before the zone.
+func _update_edge_warning(delta: float) -> void:
+	var danger := 0.0
+	if is_instance_valid(edge_watch) and not edge_watch.health.is_dead and not _ended:
+		danger = edge_watch.edge_danger()
+	if danger <= 0.0 and _edge_glow == null:
+		return
+	if _edge_glow == null:
+		_edge_glow = TextureRect.new()
+		var g := Gradient.new()
+		g.set_color(0, Color(0.85, 0.05, 0.02, 0.0))
+		g.set_color(1, Color(0.85, 0.05, 0.02, 0.75))
+		var tex := GradientTexture2D.new()
+		tex.gradient = g
+		tex.fill_from = Vector2(0, 0)
+		tex.fill_to = Vector2(0, 1)
+		tex.width = 4
+		tex.height = 64
+		_edge_glow.texture = tex
+		_edge_glow.stretch_mode = TextureRect.STRETCH_SCALE
+		_edge_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_edge_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_edge_glow.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		_edge_glow.offset_top = -220
+		add_child(_edge_glow)
+		move_child(_edge_glow, 0)  # Behind the rest of the HUD.
+		_edge_label = Label.new()
+		_edge_label.text = "EDGE!"
+		_edge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_edge_label.add_theme_font_size_override("font_size", 44)
+		_edge_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+		_edge_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		_edge_label.add_theme_constant_override("outline_size", 10)
+		_edge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_edge_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_edge_label.offset_left = -150
+		_edge_label.offset_right = 150
+		_edge_label.offset_top = -90
+		_edge_label.offset_bottom = -30
+		add_child(_edge_label)
+	_edge_t += delta
+	var pulse := 0.75 + 0.25 * sin(_edge_t * 10.0)
+	_edge_glow.modulate.a = danger * pulse
+	_edge_label.visible = danger >= 1.0
+	_edge_label.modulate.a = pulse
+
+
+func edge_warning_strength() -> float:
+	return _edge_glow.modulate.a if _edge_glow else 0.0
+
+
+func show_boss_bar(title: String, value: float = 1.0) -> void:
+	if _boss_box == null:
+		_boss_box = Control.new()
+		_boss_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_boss_box.position = Vector2(-300, 70)
+		_boss_box.size = Vector2(600, 64)
+		_boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_boss_box)
+		_boss_name = Label.new()
+		_boss_name.size = Vector2(600, 30)
+		_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_boss_name.add_theme_font_size_override("font_size", 22)
+		_boss_name.add_theme_color_override("font_outline_color", Color.BLACK)
+		_boss_name.add_theme_constant_override("outline_size", 6)
+		_boss_box.add_child(_boss_name)
+		_boss_bar = ProgressBar.new()
+		_boss_bar.position = Vector2(0, 32)
+		_boss_bar.size = Vector2(600, 22)
+		_boss_bar.show_percentage = false
+		_boss_bar.max_value = 1.0
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.1, 0.1, 0.12, 0.85)
+		bg.border_color = Color.BLACK
+		bg.set_border_width_all(3)
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = Color("d4553f")
+		fill.border_color = Color.BLACK
+		fill.set_border_width_all(3)
+		_boss_bar.add_theme_stylebox_override("background", bg)
+		_boss_bar.add_theme_stylebox_override("fill", fill)
+		_boss_box.add_child(_boss_bar)
+	_boss_box.visible = title != ""
+	_boss_name.text = title
+	_boss_bar.value = value
+
+
+func set_boss_health(value: float) -> void:
+	if _boss_bar:
+		_boss_bar.value = value
+
+
+func boss_bar_visible() -> bool:
+	return _boss_box != null and _boss_box.visible
+
+
+## The boss is dead: the run is won. Same summary as a death, with the win layout.
+func show_victory() -> void:
+	if _ended:
+		return
+	_ended = true
+	if _run:
+		_run.won = true
+		_run.finish()
+	await get_tree().create_timer(2.5).timeout
+	$Margin.hide()
+	wave_label.hide()
+	if _boss_box:
+		_boss_box.hide()
+	var popup := RunEndPopup.new()
+	end_popup = popup
+	add_child(popup)
+	popup.present(_run.summary() if _run else {"won": true})
 
 
 func _on_died() -> void:

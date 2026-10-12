@@ -42,6 +42,25 @@ var camera: Camera3D
 var aim_point: Vector3
 ## Attacks set this below 1.0 to slow the Hulk while swinging. 1.0 = full speed.
 var move_speed_multiplier: float = 1.0
+## Outside shoves (a ramming truck, a bell slam). Added on top of his own movement and bled
+## off quickly, so he gets thrown but stays in control.
+var _knock: Vector3 = Vector3.ZERO
+var _knock_applied: Vector3 = Vector3.ZERO
+var _knock_decay: float = 40.0  # The part of velocity that is this frame's knock.
+@export_group("Edge")
+## Below this height he's gone off the bridge: he dies and the run ends.
+@export var fall_death_y: float = -4.0
+## The open side of the bridge: the south rail's inner face (z). The north side is a wall.
+@export var edge_z: float = 4.0
+## Within this many meters of the rail, a boss hit (truck ram, bell slam) throws him over it.
+## The HUD's edge warning lights up over the same zone, so the danger is always shown.
+@export var edge_zone: float = 1.6
+## The throw over the rail: speed toward it and lift.
+@export var edge_throw_speed: float = 9.0
+@export var edge_throw_lift: float = 9.0
+## Emitted once when he goes over the edge (before the death).
+signal fell_off
+var _fell: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _hurt_overlay: StandardMaterial3D
@@ -70,15 +89,24 @@ func _physics_process(delta: float) -> void:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 
 	var move_dir := _camera_relative(input)
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	# Last frame's knock is taken back out first. It used to stay in the velocity and get
+	# added again every frame, so a ram compounded into a 60 m launch off the bridge.
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z) - _knock_applied
+	_knock_applied = Vector3.ZERO
 	var rate := acceleration if move_dir != Vector3.ZERO else deceleration
 	horizontal = horizontal.move_toward(move_dir * move_speed * move_speed_multiplier, rate * delta)
+	if _knock.length_squared() > 0.01:
+		horizontal += _knock
+		_knock_applied = _knock
+		_knock = _knock.move_toward(Vector3.ZERO, _knock_decay * delta)
 	if charge.is_driving():
 		horizontal = charge.drive_velocity()  # The charge owns movement: straight line, full speed.
+		_knock_applied = Vector3.ZERO
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 
 	move_and_slide()
+	_check_fall()
 	_shove_humans()
 	animator.update_locomotion(Vector2(velocity.x, velocity.z).length())
 
@@ -130,6 +158,52 @@ func face_point(point: Vector3, delta: float) -> void:
 	# Frame-rate independent smoothing: same feel at 60 or 240 fps.
 	var weight := 1.0 - exp(-turn_sharpness * delta)
 	rotation.y = lerp_angle(rotation.y, target_yaw, weight)
+
+
+## Gets him shoved (m/s, flat part only). Used by boss hits.
+## Off the edge: dead, whatever his HP or shields (the win-screen invulnerability included,
+## though nothing knocks him then). He keeps dropping out of shot, then stops simulating.
+func _check_fall() -> void:
+	if global_position.y > fall_death_y:
+		return
+	if not _fell:
+		_fell = true
+		fell_off.emit()
+		if not health.is_dead:
+			health.invulnerable = false
+			health.take_damage(health.current)
+	if global_position.y < fall_death_y - 30.0:
+		velocity = Vector3.ZERO
+		set_physics_process(false)
+
+
+## 0 well clear of the rail, 1 inside the danger zone (ramps up over the last meter before it).
+func edge_danger() -> float:
+	var zone_start := edge_z - edge_zone
+	return clampf((global_position.z - (zone_start - 1.0)) / 1.0, 0.0, 1.0)
+
+
+func in_edge_zone() -> bool:
+	return global_position.z >= edge_z - edge_zone
+
+
+## A boss hit: thrown over the rail if he's in the danger zone, else the normal knock.
+## Returns true if this one sends him over.
+func boss_knock(push: Vector3) -> bool:
+	if in_edge_zone():
+		knock(Vector3(0, 0, 1) * edge_throw_speed + Vector3.UP * edge_throw_lift, 6.0)
+		return true
+	knock(push)
+	return false
+
+
+## decay: how fast the shove dies off (m/s per second). The normal 40 is a short stagger;
+## the over-the-rail throw uses a slow one so he actually carries over it.
+func knock(push: Vector3, decay: float = 40.0) -> void:
+	_knock = Vector3(push.x, 0.0, push.z)
+	_knock_decay = decay
+	if push.y > 0.0 and is_on_floor():
+		velocity.y = push.y
 
 
 ## True when no attack is in progress and we're alive. Attacks check this before starting,

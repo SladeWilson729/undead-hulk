@@ -60,6 +60,8 @@ const FLYING_BODY := preload("res://scenes/enemies/flying_body.tscn")
 @export var throw_kill_speed: float = 6.0
 ## ...up to this many, then it's just a body.
 @export var throw_max_hits: int = 3
+## Damage a thrown soldier does when he hits the boss truck.
+@export var truck_damage: float = 10.0
 
 var phase: Phase = Phase.READY
 var cooldown_remaining: float = 0.0
@@ -217,6 +219,9 @@ func _update_missiles() -> void:
 			_missiles.remove_at(i)
 			continue
 		var c: Vector3 = body.get_center()
+		if WarWagon.hit_near(get_tree(), c, 0.5, truck_damage, "yeet") > 0.0:
+			m["hits"] = throw_max_hits  # Splat against the truck: done.
+			continue
 		for node in get_tree().get_nodes_in_group("enemies"):
 			var human := node as Human
 			if human == null:
@@ -242,8 +247,8 @@ func _find_target() -> Human:
 	var best_dist := eat_range
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var human := node as Human
-		if human == null:
-			continue
+		if human == null or human.is_in_group("boss"):  # The Deacon (group, not class: avoids a load cycle).
+			continue  # Bosses don't get eaten.
 		var offset := human.global_position - hulk.global_position
 		offset.y = 0.0
 		var dist := offset.length()

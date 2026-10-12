@@ -79,6 +79,8 @@ extends Node3D
 @onready var sfx: Sfx = $Sfx
 @onready var run: Run = $Run
 @onready var augments: AugmentSystem = $Augments
+## The wave 15 fake-out and the boss. Made in code so main.tscn doesn't need a new node.
+var finale: Finale
 
 var _hit_stop_token: int = 0
 
@@ -86,6 +88,17 @@ var _hit_stop_token: int = 0
 func _ready() -> void:
 	# Saved sound settings (music / SFX / voices on or off) before anything plays.
 	GameSettings.load_and_apply()
+	finale = Finale.new()
+	finale.name = "Finale"
+	add_child(finale)
+	finale.hulk = hulk
+	finale.hud = hud
+	finale.spawner = spawner
+	finale.run = run
+	finale.music = music
+	finale.camera_rig = camera_rig
+	finale.sfx = sfx
+	spawner.final_wave_cleared.connect(finale.start)
 	hulk.camera = camera_rig.camera
 	hud.bind(hulk.health)
 	hulk.punch.punched.connect(_on_punched)
@@ -168,7 +181,9 @@ func _on_wave_cleared_heal(_wave: int) -> void:
 
 
 ## After a wave clears (and the victory roar starts), pause for the augment pick.
-func _on_wave_cleared_pick(_wave: int) -> void:
+func _on_wave_cleared_pick(wave: int) -> void:
+	if spawner.final_wave > 0 and wave >= spawner.final_wave:
+		return  # No pick after the last wave: it would spoil the fake-out.
 	await get_tree().create_timer(augments.pick_delay, false).timeout
 	if not is_inside_tree() or hulk.health.is_dead or run.ended:
 		return

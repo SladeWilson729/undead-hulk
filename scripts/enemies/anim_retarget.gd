@@ -85,7 +85,10 @@ static func retarget(src_anim: Animation, src_model: Node3D, dst_model: Node3D, 
 		if hips_track >= 0:
 			var p := src_anim.position_track_interpolate(hips_src_track, time)
 			var rest_d := dst.get_bone_rest(hips_dst).origin
-			var hips_pos := Vector3(rest_d.x, p.y * hips_ratio, rest_d.z)
+			# Some exports (the Deacon) store the hips rest height in z: that's not a forward
+			# offset, and keeping it shoved his whole body 1.4 m off his collider.
+			var rest_z := rest_d.z if absf(rest_d.y) >= absf(rest_d.z) * 0.5 else 0.0
+			var hips_pos := Vector3(rest_d.x, p.y * hips_ratio, rest_z)
 			out.position_track_insert_key(hips_track, time, hips_pos)
 			for toe in toes:
 				if toe >= 0:
@@ -287,7 +290,8 @@ static func retarget_sampled(src_model: Node3D, clip: StringName, dst_model: Nod
 			out.rotation_track_insert_key(tracks[b], time, (parent_world.inverse() * dst_world[b]).normalized())
 		var src_hip_y := (src_xf * src.get_bone_global_pose(hips_src)).origin.y - src_ground
 		var rest_d := dst.get_bone_rest(hips_dst).origin
-		var hips_pos := Vector3(rest_d.x, src_hip_y * hips_ratio, rest_d.z)
+		var rest_z := rest_d.z if absf(rest_d.y) >= absf(rest_d.z) * 0.5 else 0.0  # See retarget().
+		var hips_pos := Vector3(rest_d.x, src_hip_y * hips_ratio, rest_z)
 		out.position_track_insert_key(hips_track, time, hips_pos)
 		for toe in toes:
 			if toe >= 0:

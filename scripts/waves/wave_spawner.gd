@@ -19,8 +19,10 @@ signal human_died(human: Human)
 signal human_spawned(human: Human)
 ## A special enemy (rocket soldier, ninja) entered the field. Main hooks up its sounds and shake.
 signal special_spawned(human: Human)
+## The last wave was cleared: no more waves. The Finale takes over (the fake-out and the boss).
+signal final_wave_cleared
 
-enum State { IDLE, BREAK, SPAWNING, FIGHTING }
+enum State { IDLE, BREAK, SPAWNING, FIGHTING, DONE }
 
 @export var human_scene: PackedScene
 ## Where spawned humans are parented.
@@ -29,6 +31,12 @@ enum State { IDLE, BREAK, SPAWNING, FIGHTING }
 @export var target: Hulk
 ## Off for tests that want to place humans by hand.
 @export var auto_start: bool = true
+
+@export_group("Run length")
+## The run's last regular wave. Clearing it hands over to the Finale. 0 = endless (tests).
+@export var final_wave: int = 15
+## The final wave brings this many times the usual specials.
+@export var final_wave_specials: int = 2
 
 @export_group("Wave size")
 @export var first_wave_size: int = 12
@@ -201,6 +209,9 @@ func _start_wave() -> void:
 	wave += 1
 	_rockets_left = rocket_soldiers_per_wave
 	_ninjas_left = ninjas_per_wave
+	if is_final_wave():
+		_rockets_left *= final_wave_specials
+		_ninjas_left *= final_wave_specials
 	_spawned_this_wave = 0
 	_to_spawn = wave_size(wave)
 	_timer = 0.0
@@ -224,5 +235,26 @@ func _on_human_died(human: Human) -> void:
 
 func _check_cleared() -> void:
 	if state == State.FIGHTING and alive <= 0 and _to_spawn == 0:
+		if is_final_wave():
+			state = State.DONE
+			wave_cleared.emit(wave)
+			final_wave_cleared.emit()
+			return
 		wave_cleared.emit(wave)
 		_begin_break(break_time)
+
+
+func is_final_wave() -> bool:
+	return final_wave > 0 and wave >= final_wave
+
+
+## Boss fight: a few soldiers at a time keep coming (something to eat, something to throw).
+## They count as kills like anyone but don't belong to a wave.
+func spawn_trickle(count: int, cap: int) -> int:
+	var made := 0
+	for i in count:
+		if alive >= cap:
+			break
+		spawn_one(null, random_spawn_position())
+		made += 1
+	return made

@@ -666,6 +666,64 @@ Steps 3-26 and the soak pass. The menu was rendered and checked.
 
 Steps 3-28, Codex's checks and the soak pass. Step 17 failed once, its known flake, then passed 3 of 3. The can, cart, barrel and throw were rendered from the game camera and checked.
 
+**Step 25 (the ending: wave 15, the fake-out and Deacon Mayhem), 2026-10-10.** Will reached wave 16, so the run now ends. His answers: a full heal at the fake-out, no augment pick after wave 15, and `tattooed+fighter+3d+model.fbx` is the Deacon.
+- **Wave 15 is the last** (`WaveSpawner.final_wave`, 0 = endless for tests). It brings 2 rocket soldiers and 2 ninjas (`final_wave_specials`). Clearing it emits `final_wave_cleared`, the spawner goes to DONE, and Main skips the augment pick.
+- **`scripts/game/finale.gd` (`Finale`, created by Main)** runs the ending:
+  - **Fake-out:** full heal and a gold "YOU WIN!" for 3.2 s.
+  - **Arrival:** the music grinds down (pitch and volume drop together), "...WAIT.", two seconds of rumble shake, the truck sting and the Deacon's entrance line.
+  - **Phase 1, the war wagon** (`scripts/boss/war_wagon.gd`, `WarWagon`, built in code). The armored truck rolls in from the far end, away from the Hulk. The Deacon (frozen guard pose) mans the machine gun in the bed. 300 HP, its own boss bar.
+    - It patrols 11 m off and fires 1.2 s bursts every 2.2 s. Hitscan, 1 damage a bullet, 80% hit chance on a still Hulk and 45% on a moving one. His own soldiers standing in the line take the bullets (Friendly Fire).
+    - Every 8-12 s it revs with flashing headlights (the tell), then rams at 21 m/s: 15 damage and a hard knock. It plows pillars, props and the car out of its way. Ramming a wall stuns it for 2.6 s, smoking, and it takes 1.5x damage while stunned. That's the opening.
+    - Everything hurts it: punch 8, pound 15, charge 30, thrown car 50, barrel blast 35, flying junk 8, thrown soldier 10.
+    - Wrecked: a 1500 bonus, two explosions that kill soldiers nearby (and hurt the Hulk for 10 if he's close), the phase-change line, and the Deacon is thrown clear toward the Hulk.
+  - **Phase 2, the Deacon on foot** (`scripts/boss/deacon_brawler.gd`, `DeaconBrawler`, a Human). **Stand-in:** his model at 2.7 m with the soldier run and punch clips retargeted. 240 HP, his own bar.
+    - Every hit comes off the pool: punch 6, pound 14, charge 22, car 30, blast 25, yeet 10. Only big hits stagger him, so punches don't stun-lock him. He can't be eaten or pinned.
+    - **Bell slam** every 7 s when he's close: 0.9 s wind-up (the bell goes up over his head), then a 4.5 m ring that does 14 and throws the Hulk. It kills his own men in the ring.
+    - Sunday Service hangs from his right fist on its chain and swings like a pendulum: it trails him when he runs and comes down in front on the slam.
+  - **Grunts trickle in** the whole fight: 3 every 7 s, up to 14 alive.
+  - **Win:** the defeat line, "SMASHED IT!", the Hulk can't be hurt, every soldier left freezes, the Hulk roars, then the SMASHED IT! summary once the line finishes. **Lose:** the Deacon gets his victory line.
+- **The camera leans toward the boss** (`CameraRig.focus`, 40% of the way, capped at 6 m) so the truck shooting from 11 m is on screen.
+- **`scripts/boss/deacon_voice.gd` (`DeaconVoice`)** plays Will's lines on the Voice bus, each brought to the same loudness. Story lines (entrance, phase change, defeat, victory) can't be cut; big-attack lines cut chatter; chatter (taunts, getting hit, hitting the Hulk) has a 5 s cooldown per kind. A taunt every 14 s while he's quiet.
+- **Sounds:** the boss gun, truck rev, truck crash, bell slam and chain whip join `Sfx`.
+- **Fixes found while testing:**
+  - The Deacon's model stood 1.4 m off his collider. His FBX stores the hips rest height in z, and the retarget kept it as a forward offset. `AnimRetarget` now ignores that z when it's really a height. No other character changes.
+  - The truck took 50 damage from the car it shoved out of its own way, and 8 from cans it pushed. Things the truck launches no longer count as hitting it, and a prop or car can only hit the truck once per flight (`truck_spent`).
+  - Two scripts named the Deacon's class in type checks, which made a script load loop (`DeaconBrawler` extends `Human`). One test start order failed to compile everything. They check the "boss" group instead.
+
+**Tests:** step 30 passed all 36 checks. It covers:
+- wave 15 is the last, with 2 of each special; clearing it ends the waves
+- the fake-out: full heal, YOU WIN!, no pick, no wave 16
+- the arrival: ...WAIT. and the entrance line
+- the truck: arrives from the far end, patrols, stays on the road, the gun hits, a punch dents it (1.5x while stunned), a barrel blast hurts it, it revs before a ram, the ram hits for 15 and throws him
+- the wreck pays 1500 and the Deacon lands with his own bar
+- the Deacon: can't be eaten, a punch takes 6, a charge 22 and staggers, the slam hits for 14
+- he dies: the run is won, he's counted with his bounty, the Hulk is untouchable, and the win summary comes up
+
+All steps, Codex's checks and the soak pass. Step 3 hit its known swarm-count flake once. The fake-out, truck, gunner, wreck, Deacon, bell and slam were rendered and checked.
+
+**Waiting on Will:** the Deacon's own Mixamo animations (walk or run, a punch combo, the bell slam, a hit reaction, a taunt, a death, and a seated or standing turret grip for the truck). Phase 2 swaps them in for the soldier clips.
+
+**Step 26 (falling off the bridge), 2026-10-11.** Will got rammed by the war wagon, went over the south rail and fell forever. The ram (6 m/s up) and the bell slam (7 m/s up) lift the Hulk 1.8 to 2.5 m, which clears the 1.2 m rail.
+- **Off the edge is death** (`Hulk.fall_death_y`, -4 m). He dies whatever his HP or shield, `fell_off` fires once, and the run ends with the summary. In the boss fight the Deacon gets his victory line.
+- **The camera stays at road level** (`CameraRig` never follows below y 0), so he drops out of shot instead of the camera chasing him down.
+- **He stops simulating** 30 m below the edge, so he doesn't fall forever.
+
+**The real cause, found next:** `Hulk.knock()` compounded. The shove was added to the velocity every frame and never taken back out, so a 16 m/s ram stacked into a 60 m launch. The Hulk now subtracts last frame's knock before adding this frame's. A ram now moves him about 3 m.
+
+**Step 26b (the edge as a threat you can read), 2026-10-11.** Will picked option 2 of 3 (keep it as is / a readable threat / an invisible wall).
+- **The danger zone** is the last 1.6 m before the south rail (`Hulk.edge_z` 4.0, `edge_zone` 1.6). A truck ram or bell slam that lands while he's in it throws him over the rail (`Hulk.boss_knock()`: 9 m/s toward the rail, 9 m/s up, slow decay). Outside the zone, no boss hit can send him over.
+- **The truck's ram always shoves him toward the open rail.** From mid-road one ram puts him near or in the zone; staying there for the next ram is fatal.
+- **EDGE! warning** (HUD, boss fight only): a red glow rises from the bottom of the screen, where the rail is. It fades in over the meter before the zone, pulses at full strength inside it with "EDGE!", and turns off when the fight ends or he dies.
+
+**Tests:** step 31 passed all 15 checks:
+- a ram-strength knock moves him a few meters, not 60
+- boss hits from z -2, 0 and 1.5 shove him toward the rail but leave him on the bridge
+- no warning outside a boss fight or mid-road; it fades in before the zone; EDGE! inside it
+- a boss hit in the zone throws him over; he dies; the camera holds; the warning goes off; the summary comes up; he stops falling
+- the real war wagon rams him off from the zone
+
+All steps and the soak pass. Step 3 hit its known swarm flake. Step 30's slam check now allows a stray grunt hit landing on the same frame. The warning was rendered and checked.
+
 ## Tuning knobs (select the node, see Inspector)
 - **Hulk:** move_speed, acceleration, deceleration, turn_sharpness
 - **CameraRig:** follow_sharpness, look_ahead_factor, look_ahead_max
@@ -729,3 +787,12 @@ Steps 3-28, Codex's checks and the soak pass. Step 17 failed once, its known fla
 - **Hulk/EatSoldier > Throw:** throw_speed, throw_lift, throw_hit_radius, throw_kill_speed, throw_max_hits
 - **Run:** points_yeeted, points_blown_up
 - **Main > Street props:** barrel_shake, barrel_kick; **Main > Yeet:** yeet_hit_shake
+- **Spawner > Waves:** final_wave, final_wave_specials
+- **Finale (created by Main; edit the defaults at the top of `scripts/game/finale.gd`):** fakeout_hold, rumble_time, trickle_every, trickle_size, trickle_cap, truck_bonus, wreck_radius, wreck_damage
+- **WarWagon (built in code; edit the defaults at the top of `scripts/boss/war_wagon.gd`):** max_health, stunned_damage_scale, patrol_speed, keep_distance, turn_rate, ram_every_min/max, rev_time, ram_speed, ram_distance, stun_time, ram_damage, ram_knock, burst_time, burst_gap, bullet_interval, bullet_damage, hit_chance_still, hit_chance_moving, gun_range
+- **DeaconBrawler (scenes/boss/deacon_brawler.tscn):** max_health, height, slam_every, slam_wind_up, slam_radius, slam_damage, slam_knock, bell_length, punch_damage, deacon_speed, bounty; damage per cause is the BOSS_DAMAGE table in the script
+- **DeaconVoice (`scripts/boss/deacon_voice.gd`):** target_db, chatter_cooldown, taunt_every
+- **Truck damage from the Hulk's side:** PunchAttack truck_damage, GroundPound truck_damage, FoolsballCharge truck_damage, ThrowableCar truck_damage, SmashProp truck_blast_damage / truck_impact_damage, EatSoldier throw truck damage
+- **CameraRig:** focus_weight, focus_max
+- **Hulk > Edge:** fall_death_y
+- **Hulk > Edge:** edge_z, edge_zone, edge_throw_speed, edge_throw_lift

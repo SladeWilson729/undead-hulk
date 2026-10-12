@@ -51,6 +51,8 @@ enum Phase { READY, RISING, SLAMMING, COOLDOWN }
 ## Trash cans, carts and barrels in the kill radius fly out this fast and this high (m/s).
 ## Mostly outward: a barrel popped straight up comes down on his own head.
 @export var prop_outward: float = 11.0
+## Damage to the boss truck if it's within 60% of the kill radius.
+@export var truck_damage: float = 15.0
 @export var prop_lift: float = 7.0
 
 var phase: Phase = Phase.READY
@@ -164,6 +166,8 @@ func _impact() -> void:
 		if to_prop.length() <= kill_radius:
 			var away := to_prop.normalized() if to_prop.length() > 0.05 else Vector3.FORWARD
 			prop.hit(away * prop_outward + Vector3.UP * prop_lift)
+
+	WarWagon.hit_near(get_tree(), center, kill_radius * 0.6, truck_damage, "pound")
 
 	_spawn_shockwave(center)
 	pounded.emit(kills)

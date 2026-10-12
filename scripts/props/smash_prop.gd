@@ -56,6 +56,11 @@ const COMIC := preload("res://scripts/vfx/comic_wall_impact.gd")
 @export var max_damage: int = 12
 @export var min_damage: int = 3
 @export var blast_launch: float = 14.0
+## Boss truck damage: a barrel blast, and anything that slams into it in flight.
+@export var truck_blast_damage: float = 35.0
+@export var truck_impact_damage: float = 8.0
+## Already dented the truck this flight (or the truck itself launched it): no more truck damage.
+var truck_spent: bool = false
 
 var state: State = State.IDLE
 ## Lit fuse seconds left (barrels), or -1.
@@ -92,6 +97,7 @@ func is_lit() -> bool:
 func hit(velocity: Vector3, lights: bool = true) -> void:
 	if state == State.GONE:
 		return
+	truck_spent = false  # A fresh launch can dent the truck again.
 	if kind == Kind.CART:
 		velocity.y = minf(velocity.y, 1.5)  # Carts roll, they don't fly.
 	if state == State.IDLE:
@@ -228,6 +234,7 @@ func explode() -> void:
 	for node in get_tree().get_nodes_in_group("smash_props"):
 		if node != self:
 			(node as SmashProp).blasted(at, blast_radius, blast_cause)
+	WarWagon.hit_near(get_tree(), at, blast_radius, truck_blast_damage, "barrel")
 	Explosion.spawn(get_parent(), at, blast_radius * 0.8)
 	exploded.emit(at, damage)
 
@@ -297,10 +304,16 @@ func _spin_for(velocity: Vector3) -> Vector3:
 			return -axis * velocity.length() * 0.3 + Vector3.UP * randf_range(-3.0, 3.0)
 
 
-func _on_body_entered(_body: Node) -> void:
+func _on_body_entered(body: Node) -> void:
 	if state != State.FLYING:
 		return
 	var speed := _prev_velocity.length()
+	if body is WarWagon and speed >= kill_speed and not truck_spent:
+		truck_spent = true
+		(body as WarWagon).take_boss_hit(truck_impact_damage, "prop")
+		if is_lit():
+			explode()
+			return
 	var now := Time.get_ticks_msec()
 	if speed >= 4.0 and now - _last_impact_ms > 200:
 		_last_impact_ms = now

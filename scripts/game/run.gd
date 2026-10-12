@@ -162,6 +162,14 @@ func record_wave_cleared(cleared_wave: int) -> void:
 	_add(wave_clear_points * cleared_wave)
 
 
+## Boss milestones (wrecking the truck): a flat bounty, listed with the other bounties.
+func record_boss_bonus(points: int) -> void:
+	if ended:
+		return
+	bounty_total += points
+	_add(points)
+
+
 func record_augment(id: String) -> void:
 	augments.append(id)
 

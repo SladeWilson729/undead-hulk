@@ -98,6 +98,7 @@ func throw(direction: Vector3, speed_scale: float = 1.0) -> void:
 	direction.y = 0.0
 	direction = direction.normalized()
 	state = State.FLYING
+	truck_spent = false
 	freeze = false
 	collision_layer = 0
 	collision_mask = 1
@@ -212,11 +213,20 @@ func _respawn() -> void:
 	_set_solid(true)
 
 
+## Damage a thrown car does to the boss truck.
+@export var truck_damage: float = 50.0
+## Already hit the truck this flight (or the truck shoved it): no more truck damage.
+var truck_spent: bool = false
+
+
 ## Plow through pillars: smash it and keep most of our speed, so the pillar doesn't
 ## register as a wall crush.
 func _on_body_entered(body: Node) -> void:
 	if state != State.FLYING:
 		return
+	if body is WarWagon and not truck_spent and _prev_velocity.length() >= kill_speed:
+		truck_spent = true
+		(body as WarWagon).take_boss_hit(truck_damage, "car")
 	var pillar := body as BreakablePillar
 	if pillar == null or pillar.broken:
 		# Anything else solid: clang. Rate-limited so a car bouncing and scraping along the

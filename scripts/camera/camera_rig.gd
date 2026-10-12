@@ -13,6 +13,12 @@ extends Node3D
 @export_range(0.0, 0.9) var look_ahead_factor: float = 0.3
 ## Hard cap on how far the camera can lean, in meters.
 @export var look_ahead_max: float = 4.0
+## Boss fights: the camera also leans toward this (the war wagon, then the Deacon), so a
+## truck shooting from 11 m away is on screen. Null = off.
+var focus: Node3D
+## How far toward the focus the camera leans (0.5 = the midpoint), capped at focus_max m.
+@export var focus_weight: float = 0.4
+@export var focus_max: float = 6.0
 
 @export_group("Shake")
 ## How fast shake fades, in trauma per second. 1 trauma fully decays in 1/shake_decay seconds.
@@ -61,8 +67,13 @@ func _physics_process(delta: float) -> void:
 	var lean := target.aim_point - target.global_position
 	lean.y = 0.0
 	lean = (lean * look_ahead_factor).limit_length(look_ahead_max)
+	if is_instance_valid(focus):
+		var to_focus := focus.global_position - target.global_position
+		to_focus.y = 0.0
+		lean = lean * 0.5 + (to_focus * focus_weight).limit_length(focus_max)
 	var desired := target.global_position + lean
-	desired.y = target.global_position.y
+	# Never follow him below the road: a Hulk knocked off the bridge drops out of shot.
+	desired.y = maxf(target.global_position.y, 0.0)
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(desired, weight)
 

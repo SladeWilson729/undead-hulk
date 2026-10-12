@@ -69,6 +69,8 @@ const COMIC := preload("res://scripts/vfx/comic_wall_impact.gd")
 @export var launch_up: float = 7.0
 ## A parked car he runs into is thrown at this fraction of a normal throw.
 @export var car_punt_scale: float = 1.1
+## Damage to the boss truck when he charges into it (he still bonks).
+@export var truck_damage: float = 30.0
 
 var phase: Phase = Phase.LOCKED
 var cooldown_remaining: float = 0.0
@@ -202,6 +204,8 @@ func _dash_step(delta: float) -> void:
 	_hit_breakables(delta)
 	var wall: Variant = _wall_contact()
 	if wall != null:
+		# Ran into the boss truck? It feels that one.
+		WarWagon.hit_near(get_tree(), hulk.global_position + direction * (hulk.body_radius + 0.6), 0.8, truck_damage, "charge")
 		_end(true, wall)
 	elif _travelled >= distance:
 		_end(false, null)

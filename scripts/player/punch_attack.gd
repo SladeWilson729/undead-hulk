@@ -110,7 +110,8 @@ func _strike() -> void:
 		juggled.emit(juggles)
 	_smash_breakables()
 	var props := _hit_props(forward)
-	punched.emit(targets.size() + juggles + props)
+	var trucks := _hit_trucks(forward)
+	punched.emit(targets.size() + juggles + props + trucks)
 
 
 ## Pillars (anything in the "breakables" group) inside the cone get smashed. Reach is
@@ -123,6 +124,26 @@ func _smash_breakables() -> void:
 		if _in_cone(pillar.global_position, reach + pillar.footprint_radius()):
 			# Rubble flies straight away from the Hulk, at fist height.
 			pillar.take_hit(pillar.global_position - hulk.global_position, 1.6, 1.0)
+
+
+@export_group("Boss")
+## Damage a punch does to the boss truck.
+@export var truck_damage: float = 8.0
+
+
+## The boss truck: a punch that reaches its side or front dents it. Returns 1 if it landed.
+func _hit_trucks(forward: Vector3) -> int:
+	var count := 0
+	for node in get_tree().get_nodes_in_group("boss_targets"):
+		var w := node as WarWagon
+		if w == null or not w.is_alive():
+			continue
+		# The point of the truck's footprint nearest the fist must be in reach, and in front.
+		var fist := hulk.global_position + forward * reach * 0.6
+		if w.footprint_distance(fist) <= reach * 0.6 and (w.global_position - hulk.global_position).dot(forward) > 0.0:
+			w.take_boss_hit(truck_damage, "punch")
+			count += 1
+	return count
 
 
 ## Trash cans, carts and barrels in the cone get batted away. Returns how many.
